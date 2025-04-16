@@ -1,7 +1,7 @@
-
 import { PageHeader } from "@/components/ui/page-header";
 import { SportCard } from "@/components/sport-card";
 import { CenterCard } from "@/components/center-card";
+import { SmartRecommendations } from "@/components/smart-recommendations";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { sports, centers } from "@/data/mockData";
@@ -29,6 +29,11 @@ export default function Home() {
             </Link>
           </div>
         </div>
+      </section>
+
+      {/* Smart Recommendations Section */}
+      <section>
+        <SmartRecommendations />
       </section>
 
       {/* Sports Section */}
