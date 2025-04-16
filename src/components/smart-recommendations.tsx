@@ -50,18 +50,20 @@ export function SmartRecommendations() {
       {/* Near Your Location */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <MapPinIcon className="h-5 w-5 text-sports-blue" />
+          <div className="p-2 rounded-full bg-gradient-to-r from-sports-lightBlue to-sports-lightBlue/70 shadow-sm">
+            <MapPinIcon className="h-5 w-5 text-sports-blue" />
+          </div>
           <h3 className="text-lg font-semibold">Near Your Location</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {locationBasedCenters.length > 0 ? (
             locationBasedCenters.map(center => (
               <Link key={center.id} to={`/slots?centerId=${center.id}`}>
-                <Card className="transition-all hover:shadow-md">
+                <Card className="transition-all hover:shadow-lg rounded-xl overflow-hidden">
                   <CardContent className="p-4">
                     <h4 className="font-semibold">{center.name}</h4>
                     <p className="text-sm text-gray-500 mb-2">{center.location}, {center.city}</p>
-                    <Button variant="outline" size="sm" className="w-full mt-2">
+                    <Button variant="outline" size="sm" className="w-full mt-2 rounded-lg shadow-sm hover:shadow-md">
                       View Slots
                     </Button>
                   </CardContent>
@@ -78,7 +80,9 @@ export function SmartRecommendations() {
       {favoriteSport && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <StarIcon className="h-5 w-5 text-sports-blue" />
+            <div className="p-2 rounded-full bg-gradient-to-r from-sports-lightOrange to-sports-lightOrange/70 shadow-sm">
+              <StarIcon className="h-5 w-5 text-sports-orange" />
+            </div>
             <h3 className="text-lg font-semibold">For Your Favorite Sport: {favoriteSport.name}</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -87,16 +91,16 @@ export function SmartRecommendations() {
                 const center = centers.find(c => c.id === slot.centerId);
                 return (
                   <Link key={slot.id} to={`/booking?slotId=${slot.id}`}>
-                    <Card className="transition-all hover:shadow-md">
+                    <Card className="transition-all hover:shadow-lg rounded-xl overflow-hidden">
                       <CardContent className="p-4">
                         <h4 className="font-semibold">{favoriteSport.name} at {center?.name}</h4>
                         <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <ClockIcon className="h-4 w-4 mr-1" />
+                          <ClockIcon className="h-4 w-4 mr-1 text-sports-blue" />
                           {slot.date} • {slot.startTime} - {slot.endTime}
                         </div>
                         <div className="mt-2 flex justify-between items-center">
                           <span className="font-medium text-sports-orange">₹{slot.price}</span>
-                          <Button size="sm">Book Now</Button>
+                          <Button size="sm" className="rounded-lg shadow-sm hover:shadow-md">Book Now</Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -114,17 +118,19 @@ export function SmartRecommendations() {
       {previousCenters.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <ClockIcon className="h-5 w-5 text-sports-blue" />
+            <div className="p-2 rounded-full bg-gradient-to-r from-gray-200 to-gray-100 shadow-sm">
+              <ClockIcon className="h-5 w-5 text-gray-600" />
+            </div>
             <h3 className="text-lg font-semibold">Based on Your Previous Bookings</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {previousCenters.map(center => (
               <Link key={center.id} to={`/slots?centerId=${center.id}`}>
-                <Card className="transition-all hover:shadow-md">
+                <Card className="transition-all hover:shadow-lg rounded-xl overflow-hidden">
                   <CardContent className="p-4">
                     <h4 className="font-semibold">{center.name}</h4>
                     <p className="text-sm text-gray-500 mb-2">{center.location}, {center.city}</p>
-                    <Button variant="outline" size="sm" className="w-full mt-2">
+                    <Button variant="outline" size="sm" className="w-full mt-2 rounded-lg shadow-sm hover:shadow-md">
                       Book Again
                     </Button>
                   </CardContent>
