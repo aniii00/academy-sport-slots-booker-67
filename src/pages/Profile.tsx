@@ -15,12 +15,15 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserIcon, LogOutIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Define an interface for bookings to work around the missing type
 interface Booking {
   id: string;
   created_at: string;
   user_id: string;
-  // Add other booking fields as needed
+  center_name: string;
+  sport_type: string;
+  slot_time: string;
+  status: string;
+  updated_at: string;
 }
 
 export default function Profile() {
@@ -40,12 +43,11 @@ export default function Profile() {
 
   const fetchBookings = async () => {
     try {
-      // Use type assertion to work around the type issue
       const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false }) as any;
+        .from("bookings")
+        .select()
+        .eq("user_id", user?.id)
+        .order("created_at", { ascending: false });
 
       if (error) {
         toast({
@@ -125,9 +127,12 @@ export default function Profile() {
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
                     <div>
-                      <p className="font-medium">Booking ID: {booking.id}</p>
+                      <p className="font-medium">{booking.center_name} - {booking.sport_type}</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(booking.created_at).toLocaleDateString()}
+                        Slot: {new Date(booking.slot_time).toLocaleString()}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Status: {booking.status}
                       </p>
                     </div>
                   </div>
