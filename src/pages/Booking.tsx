@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -282,18 +281,20 @@ export default function Booking() {
       
       const booking = {
         user_id: user.id,
-        center_name: venue.name,
-        sport_type: sport.name,
-        slot_time: slotDateTime.toISOString(),
-        status: 'confirmed',
         venue_id: venue.id,
         sport_id: sport.id,
-        slot_id: slot.id.startsWith('temp-') ? null : slot.id // Only use real slot IDs
+        slot_id: slot.id.startsWith('temp-') ? null : slot.id,
+        slot_time: slotDateTime.toISOString(),
+        status: 'confirmed',
+        full_name: name,
+        phone: phone
       };
       
       const { data, error } = await supabase
         .from('bookings')
-        .insert(booking);
+        .insert(booking)
+        .select()
+        .single();
       
       if (error) {
         console.error("Booking error:", error);

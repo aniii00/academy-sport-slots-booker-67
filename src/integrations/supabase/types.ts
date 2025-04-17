@@ -11,43 +11,43 @@ export type Database = {
     Tables: {
       bookings: {
         Row: {
-          center_name: string
           created_at: string
+          full_name: string
           id: string
+          phone: string
           slot_id: string | null
           slot_time: string
-          sport_id: string | null
-          sport_type: string
+          sport_id: string
           status: string
           updated_at: string
           user_id: string
-          venue_id: string | null
+          venue_id: string
         }
         Insert: {
-          center_name: string
           created_at?: string
+          full_name: string
           id?: string
+          phone: string
           slot_id?: string | null
           slot_time: string
-          sport_id?: string | null
-          sport_type: string
+          sport_id: string
           status?: string
           updated_at?: string
           user_id: string
-          venue_id?: string | null
+          venue_id: string
         }
         Update: {
-          center_name?: string
           created_at?: string
+          full_name?: string
           id?: string
+          phone?: string
           slot_id?: string | null
           slot_time?: string
-          sport_id?: string | null
-          sport_type?: string
+          sport_id?: string
           status?: string
           updated_at?: string
           user_id?: string
-          venue_id?: string | null
+          venue_id?: string
         }
         Relationships: [
           {

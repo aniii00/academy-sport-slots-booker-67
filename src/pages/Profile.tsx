@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,7 +33,11 @@ export default function Profile() {
       
       const { data, error } = await supabase
         .from('bookings')
-        .select()
+        .select(`
+          *,
+          venues (name),
+          sports (name)
+        `)
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
@@ -122,7 +125,7 @@ export default function Profile() {
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
                     <div>
-                      <p className="font-medium">{booking.center_name} - {booking.sport_type}</p>
+                      <p className="font-medium">{booking.venues?.name} - {booking.sports?.name}</p>
                       <p className="text-sm text-muted-foreground">
                         Slot: {new Date(booking.slot_time).toLocaleString()}
                       </p>
