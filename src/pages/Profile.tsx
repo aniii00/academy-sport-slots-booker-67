@@ -1,30 +1,14 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserIcon, LogOutIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Booking {
-  id: string;
-  created_at: string;
-  user_id: string;
-  center_name: string;
-  sport_type: string;
-  slot_time: string;
-  status: string;
-  updated_at: string;
-}
+import type { Booking } from "@/types/booking";
 
 export default function Profile() {
   const { user, profile } = useAuth();
@@ -48,10 +32,10 @@ export default function Profile() {
       console.log("Fetching bookings for user ID:", user?.id);
       
       const { data, error } = await supabase
-        .from("bookings")
+        .from('bookings')
         .select()
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false });
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error("Error fetching bookings:", error);

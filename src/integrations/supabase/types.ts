@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          center_name: string
+          created_at: string
+          id: string
+          slot_time: string
+          sport_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          center_name: string
+          created_at?: string
+          id?: string
+          slot_time: string
+          sport_type: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          center_name?: string
+          created_at?: string
+          id?: string
+          slot_time?: string
+          sport_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

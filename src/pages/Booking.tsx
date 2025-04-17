@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -23,6 +22,7 @@ import {
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Booking } from "@/types/booking";
 
 export default function Booking() {
   const [searchParams] = useSearchParams();
@@ -35,7 +35,6 @@ export default function Booking() {
   const [phone, setPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Find slot based on ID from URL
   useEffect(() => {
     if (slotId) {
       const allSlots = generateTimeSlots();
@@ -43,7 +42,6 @@ export default function Booking() {
       if (foundSlot && foundSlot.available) {
         setSlot(foundSlot);
       } else {
-        // If slot doesn't exist or is not available, redirect to slots page
         toast.error("This slot is not available for booking");
         navigate("/slots");
       }
@@ -52,7 +50,6 @@ export default function Booking() {
     }
   }, [slotId, navigate]);
   
-  // Get the center and sport for the selected slot
   const center = slot ? centers.find(c => c.id === slot.centerId) : null;
   const sport = slot ? sports.find(s => s.id === slot.sportId) : null;
   
@@ -83,14 +80,15 @@ export default function Booking() {
     setIsSubmitting(true);
     
     try {
-      // Save booking to Supabase
-      const { data, error } = await supabase.from('bookings').insert({
-        user_id: user.id,
-        center_name: center.name,
-        sport_type: sport.name,
-        slot_time: new Date(slot.date + 'T' + slot.startTime).toISOString(),
-        status: 'confirmed'
-      });
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert({
+          user_id: user.id,
+          center_name: center.name,
+          sport_type: sport.name,
+          slot_time: new Date(slot.date + 'T' + slot.startTime).toISOString(),
+          status: 'confirmed'
+        });
       
       if (error) {
         console.error("Booking error:", error);
@@ -129,7 +127,6 @@ export default function Booking() {
       />
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Booking summary */}
         <Card>
           <CardContent className="pt-6">
             <h3 className="text-xl font-semibold mb-4">Booking Summary</h3>
@@ -172,7 +169,6 @@ export default function Booking() {
           </CardContent>
         </Card>
         
-        {/* Booking form */}
         <Card>
           <form onSubmit={handleSubmit}>
             <CardContent className="pt-6">
