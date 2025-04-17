@@ -11,4 +11,13 @@ export interface Booking {
   phone: string;
   created_at: string;
   updated_at: string;
+  // Add nested relationships for venues and sports
+  venues?: { 
+    name: string;
+    [key: string]: any;
+  };
+  sports?: {
+    name: string;
+    [key: string]: any;
+  };
 }
