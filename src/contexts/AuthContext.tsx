@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Session } from "@supabase/supabase-js";
@@ -15,6 +14,7 @@ type Profile = {
   created_at: string;
   updated_at: string;
   has_set_preferences: boolean | null;
+  favorite_sports: string[] | null;
 };
 
 interface AuthContextType {
@@ -44,7 +44,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Setup auth state listener first to catch any auth events during initial load
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log("Auth state changed:", event, currentSession?.user?.id);
@@ -52,7 +51,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         
         if (currentSession?.user) {
-          // Fetch profile in a separate function to avoid auth deadlocks
           setTimeout(() => fetchProfile(currentSession.user.id), 0);
         } else {
           setProfile(null);
@@ -61,7 +59,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Check for existing session
     const initializeAuth = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -97,7 +94,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
       if (error) {
         console.error("Error fetching profile:", error);
-        // Show error toast only if it's not a permissions issue
         if (error.code !== '42501' && error.code !== '42P17') {
           toast({
             title: "Error fetching profile",
@@ -110,8 +106,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProfile(data);
       } else {
         console.log("No profile found for user:", userId);
-        // User exists but no profile - could happen if trigger failed
-        // Consider creating profile here or notifying user
+        setProfile(null);
       }
     } catch (error) {
       console.error("Exception in profile fetch:", error);

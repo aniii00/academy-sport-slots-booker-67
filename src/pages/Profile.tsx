@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
 import { PreferencesDialog } from "@/components/preferences/PreferencesDialog";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
