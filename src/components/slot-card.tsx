@@ -8,6 +8,7 @@ import { TimeIcon, PriceIcon } from "@/utils/iconMapping";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { toast } from "@/components/ui/sonner";
 
 interface SlotCardProps {
   slot: Slot;
@@ -43,6 +44,7 @@ export function SlotCard({ slot, className }: SlotCardProps) {
         setSport(sportData);
       } catch (error) {
         console.error("Error fetching slot details:", error);
+        toast.error("Error loading slot details");
       } finally {
         setIsLoading(false);
       }
@@ -69,6 +71,9 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   // Format date
   const formattedDate = format(new Date(slot.date), "EEE, dd MMM yyyy");
 
+  // Ensure the slot ID is fully preserved for routing
+  const bookingUrl = `/booking?slotId=${encodeURIComponent(slot.id)}`;
+
   return (
     <Card className={cn("transition-all hover:shadow-lg rounded-2xl", className)}>
       <CardContent className="p-5">
@@ -91,7 +96,7 @@ export function SlotCard({ slot, className }: SlotCardProps) {
           </div>
         </div>
         
-        <Link to={`/booking?slotId=${slot.id}`}>
+        <Link to={bookingUrl}>
           <Button 
             className={cn(
               "w-full rounded-xl shadow-sm hover:shadow-md",
