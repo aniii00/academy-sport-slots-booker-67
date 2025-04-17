@@ -128,13 +128,16 @@ export default function Booking() {
           const endTimeObj = new Date(timeObj);
           endTimeObj.setMinutes(endTimeObj.getMinutes() + 30);
           
+          const formattedEndTime = format(endTimeObj, 'HH:mm:00');
+          console.log("Calculated end time:", formattedEndTime);
+          
           const tempSlot: Slot = {
             id: slotId,
             venue_id: venueId,
             sport_id: sportId,
             date: date,
             start_time: time,
-            end_time: format(endTimeObj, 'HH:mm:00'),
+            end_time: formattedEndTime,
             price: 0, // Will be determined later
             available: true,
             created_at: new Date().toISOString(),
@@ -288,17 +291,26 @@ export default function Booking() {
       // Fix: Create a valid date object for the slot time
       const dateString = slot.date; // YYYY-MM-DD
       const timeString = slot.start_time; // HH:MM:SS or HH:MM
+      
+      // Ensure timeString has the right format (HH:MM)
+      const cleanTimeString = timeString.length <= 5 ? timeString : timeString.substring(0, 5);
 
       // Create a proper ISO string that JavaScript can parse
-      const isoString = `${dateString}T${timeString.padEnd(8, ':00')}`;
+      const isoString = `${dateString}T${cleanTimeString.padEnd(8, ':00')}`;
       console.log("Created ISO string for booking:", isoString);
+      
+      // Validate the date before using it
+      const bookingDate = new Date(isoString);
+      if (isNaN(bookingDate.getTime())) {
+        throw new Error(`Invalid date created: ${isoString}`);
+      }
       
       const booking = {
         user_id: user.id,
         venue_id: venue.id,
         sport_id: sport.id,
         slot_id: slot.id.startsWith('temp-') ? null : slot.id,
-        slot_time: new Date(isoString).toISOString(), // This should now be valid
+        slot_time: bookingDate.toISOString(), // This should now be valid
         status: 'confirmed',
         full_name: name,
         phone: phone
@@ -330,7 +342,7 @@ export default function Booking() {
       navigate("/booking-success");
     } catch (error: any) {
       console.error("Booking error:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("An unexpected error occurred: " + error.message);
     } finally {
       setIsSubmitting(false);
     }
