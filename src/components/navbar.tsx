@@ -1,11 +1,8 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetTrigger 
-} from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   HomeIcon, 
   ListIcon, 
@@ -13,13 +10,12 @@ import {
   LoginIcon, 
   SettingsIcon 
 } from "@/utils/iconMapping";
-import { useState } from "react";
 
 export function Navbar() {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, isAdmin } = useAuth();
   
-  const toggleAdmin = () => {
-    setIsAdmin(!isAdmin);
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
@@ -41,50 +37,21 @@ export function Navbar() {
           </nav>
           
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              onClick={toggleAdmin}
-              className="hidden md:inline-flex"
-            >
-              {isAdmin ? "Exit Admin" : "Admin Login"}
-            </Button>
-            
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button size="icon" variant="ghost" className="md:hidden">
-                  <ListIcon className="h-5 w-5" />
+            {user ? (
+              <Button
+                variant="ghost"
+                onClick={handleSignOut}
+                className="hidden md:inline-flex"
+              >
+                Sign Out
+              </Button>
+            ) : (
+              <Link to="/auth">
+                <Button variant="ghost" className="hidden md:inline-flex">
+                  Sign In
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="right">
-                <div className="py-4">
-                  <h2 className="text-lg font-semibold mb-4">Menu</h2>
-                  <div className="flex flex-col gap-2">
-                    <Link to="/" className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-100">
-                      <HomeIcon className="h-5 w-5" />
-                      <span>Home</span>
-                    </Link>
-                    <Link to="/centers" className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-100">
-                      <CalendarIcon className="h-5 w-5" />
-                      <span>Find Centers</span>
-                    </Link>
-                    {isAdmin && (
-                      <Link to="/admin" className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-100">
-                        <SettingsIcon className="h-5 w-5" />
-                        <span>Admin Panel</span>
-                      </Link>
-                    )}
-                    <Button
-                      variant="ghost"
-                      onClick={toggleAdmin}
-                      className="flex items-center justify-start gap-2 px-4 py-2 h-auto font-normal"
-                    >
-                      <LoginIcon className="h-5 w-5" />
-                      <span>{isAdmin ? "Exit Admin" : "Admin Login"}</span>
-                    </Button>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+              </Link>
+            )}
           </div>
         </div>
       </div>
