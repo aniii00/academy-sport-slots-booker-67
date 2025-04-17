@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Session } from "@supabase/supabase-js";
@@ -103,7 +104,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } else if (data) {
         console.log("Profile fetched successfully:", data);
-        setProfile(data);
+        // Ensure the data has all the required properties for the Profile type
+        setProfile({
+          ...data,
+          favorite_sports: data.favorite_sports || null
+        });
       } else {
         console.log("No profile found for user:", userId);
         setProfile(null);
