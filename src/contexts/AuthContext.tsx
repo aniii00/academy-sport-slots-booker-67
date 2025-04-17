@@ -14,8 +14,6 @@ type Profile = {
   role: string;
   created_at: string;
   updated_at: string;
-  has_set_preferences: boolean | null;
-  favorite_sports: string[] | null;
 };
 
 interface AuthContextType {
@@ -88,7 +86,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log("Fetching profile for user:", userId);
       
-      // First fetch the basic profile
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -106,23 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } else if (data) {
         console.log("Profile fetched successfully:", data);
-        
-        // Now fetch user preferences to get favorite_sports
-        const { data: preferencesData, error: preferencesError } = await supabase
-          .from('user_preferences')
-          .select('favorite_sports')
-          .eq('user_id', userId)
-          .maybeSingle();
-          
-        if (preferencesError) {
-          console.error("Error fetching user preferences:", preferencesError);
-        }
-        
-        // Set the profile with favorite_sports from preferences if available
-        setProfile({
-          ...data,
-          favorite_sports: preferencesData?.favorite_sports || null
-        });
+        setProfile(data);
       } else {
         console.log("No profile found for user:", userId);
         setProfile(null);

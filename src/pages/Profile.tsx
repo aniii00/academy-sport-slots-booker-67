@@ -6,41 +6,24 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserIcon, LogOutIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
+import { UserIcon, LogOutIcon, RefreshCwIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
-import { PreferencesDialog } from "@/components/preferences/PreferencesDialog";
 import { useState, useEffect, useCallback } from "react";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [sports, setSports] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [showPreferences, setShowPreferences] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchBookings();
-    fetchSports();
   }, [user]);
-
-  const fetchSports = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('sports')
-        .select('*');
-      if (error) throw error;
-      setSports(data || []);
-    } catch (error: any) {
-      console.error("Error fetching sports:", error);
-    }
-  };
 
   const fetchBookings = useCallback(async () => {
     if (!user?.id) return;
@@ -149,36 +132,8 @@ export default function Profile() {
                 <CardTitle>{userName}</CardTitle>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPreferences(true)}
-              >
-                <SettingsIcon className="h-4 w-4 mr-2" />
-                Preferences
-              </Button>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="mt-4">
-              <h3 className="text-sm font-medium mb-2">Your Sports Preferences</h3>
-              <div className="flex flex-wrap gap-2">
-                {profile?.has_set_preferences ? (
-                  sports
-                    .filter(sport => 
-                      profile.favorite_sports?.includes(sport.id)
-                    )
-                    .map(sport => (
-                      <Badge key={sport.id} variant="secondary">
-                        {sport.name}
-                      </Badge>
-                    ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No preferences set</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
         </Card>
 
         <Card>
@@ -240,12 +195,6 @@ export default function Profile() {
           </CardContent>
         </Card>
       </div>
-
-      <PreferencesDialog
-        open={showPreferences}
-        onOpenChange={setShowPreferences}
-        sports={sports}
-      />
     </div>
   );
 }
