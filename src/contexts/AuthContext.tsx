@@ -87,6 +87,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchProfile = async (userId: string) => {
     try {
       console.log("Fetching profile for user:", userId);
+      
+      // First fetch the basic profile
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -104,11 +106,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } else if (data) {
         console.log("Profile fetched successfully:", data);
-        // Cast the data to include favorite_sports, since this might be coming from a joined user_preferences table
-        // or will be extended in the profiles table in a future migration
+        
+        // Now fetch user preferences to get favorite_sports
+        const { data: preferencesData, error: preferencesError } = await supabase
+          .from('user_preferences')
+          .select('favorite_sports')
+          .eq('user_id', userId)
+          .maybeSingle();
+          
+        if (preferencesError) {
+          console.error("Error fetching user preferences:", preferencesError);
+        }
+        
+        // Set the profile with favorite_sports from preferences if available
         setProfile({
           ...data,
-          favorite_sports: (data as any).favorite_sports || null
+          favorite_sports: preferencesData?.favorite_sports || null
         });
       } else {
         console.log("No profile found for user:", userId);

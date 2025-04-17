@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -115,6 +116,14 @@ export default function Profile() {
     );
   }
 
+  const userName = profile?.first_name || profile?.last_name 
+    ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()
+    : 'User';
+  
+  const userInitials = userName !== 'User' 
+    ? `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase() 
+    : 'U';
+
   return (
     <div className="container max-w-4xl mx-auto p-4">
       <PageHeader 
@@ -133,11 +142,11 @@ export default function Profile() {
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
                 <AvatarFallback>
-                  <UserIcon className="h-8 w-8" />
+                  {userInitials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <CardTitle>{profile?.first_name || ""} {profile?.last_name || ""}</CardTitle>
+                <CardTitle>{userName}</CardTitle>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
               </div>
               <Button
