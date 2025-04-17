@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
 export function Navbar() {
-  const { user, isAdmin, isLoading, signOut } = useAuth();
+  const { user, session, isAdmin, isLoading, signOut } = useAuth();
   const { toast } = useToast();
   const [isSigningOut, setIsSigningOut] = useState(false);
   

@@ -1,9 +1,10 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User } from "@supabase/supabase-js";
+import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { useToast } from "@/hooks/use-toast";
 
 type Profile = {
   id: string;
@@ -17,6 +18,7 @@ type Profile = {
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   profile: Profile | null;
   isAdmin: boolean;
   isLoading: boolean;
@@ -25,6 +27,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  session: null,
   profile: null,
   isAdmin: false,
   isLoading: true,
@@ -33,21 +36,23 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Setup auth state listener first to catch any auth events during initial load
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id);
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
+      async (event, currentSession) => {
+        console.log("Auth state changed:", event, currentSession?.user?.id);
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
         
-        if (currentUser) {
+        if (currentSession?.user) {
           // Fetch profile in a separate function to avoid auth deadlocks
-          setTimeout(() => fetchProfile(currentUser.id), 0);
+          setTimeout(() => fetchProfile(currentSession.user.id), 0);
         } else {
           setProfile(null);
           setIsLoading(false);
@@ -58,11 +63,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check for existing session
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
         
-        if (session?.user) {
-          await fetchProfile(session.user.id);
+        if (currentSession?.user) {
+          await fetchProfile(currentSession.user.id);
         } else {
           setIsLoading(false);
         }
@@ -86,19 +92,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
         
       if (error) {
         console.error("Error fetching profile:", error);
-        // If there's an error fetching profile, check if it's a permissions issue
-        if (error.code === '42501' || error.code === '42P17') {
-          // Try signing out and redirecting to auth page if we have RLS issues
-          await signOut();
-          return;
+        // Show error toast only if it's not a permissions issue
+        if (error.code !== '42501' && error.code !== '42P17') {
+          toast({
+            title: "Error fetching profile",
+            description: error.message,
+            variant: "destructive",
+          });
         }
-      } else {
+      } else if (data) {
         console.log("Profile fetched successfully:", data);
         setProfile(data);
+      } else {
+        console.log("No profile found for user:", userId);
+        // User exists but no profile - could happen if trigger failed
+        // Consider creating profile here or notifying user
       }
     } catch (error) {
       console.error("Exception in profile fetch:", error);
@@ -111,6 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await supabase.auth.signOut();
       setUser(null);
+      setSession(null);
       setProfile(null);
       navigate("/auth");
     } catch (error) {
@@ -120,6 +133,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const value = {
     user,
+    session,
     profile,
     isAdmin: profile?.role === "admin",
     isLoading,
