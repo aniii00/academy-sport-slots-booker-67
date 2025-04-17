@@ -6,13 +6,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { HomeIcon, GridIcon, CalendarIcon, UserIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export function Navbar() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   
   const handleSignOut = async () => {
+    if (isSigningOut) return;
+    
+    setIsSigningOut(true);
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
@@ -23,6 +28,8 @@ export function Navbar() {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
@@ -45,7 +52,12 @@ export function Navbar() {
           </nav>
           
           <div className="flex items-center gap-4">
-            {user ? (
+            {isLoading ? (
+              <Button variant="ghost" disabled className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full animate-pulse bg-muted"></div>
+                Loading
+              </Button>
+            ) : user ? (
               <>
                 <Link to="/profile">
                   <Button variant="ghost" className="flex items-center gap-2">
@@ -56,9 +68,10 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   onClick={handleSignOut}
+                  disabled={isSigningOut}
                   className="hidden md:inline-flex"
                 >
-                  Sign Out
+                  {isSigningOut ? "Signing Out..." : "Sign Out"}
                 </Button>
               </>
             ) : (

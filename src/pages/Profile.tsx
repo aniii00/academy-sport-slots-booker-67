@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,14 +7,16 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserIcon, LogOutIcon } from "lucide-react";
+import { UserIcon, LogOutIcon, RefreshCwIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Booking } from "@/types/booking";
 
 export default function Profile() {
   const { user, profile } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -26,7 +29,9 @@ export default function Profile() {
     fetchBookings();
   }, [user, navigate]);
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
+    if (!user?.id) return;
+    
     setIsLoading(true);
     try {
       console.log("Fetching bookings for user ID:", user?.id);
@@ -63,9 +68,12 @@ export default function Profile() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id, toast]);
 
   const handleSignOut = async () => {
+    if (isSigningOut) return;
+    
+    setIsSigningOut(true);
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
@@ -76,6 +84,7 @@ export default function Profile() {
         description: error.message,
         variant: "destructive",
       });
+      setIsSigningOut(false);
     }
   };
 
@@ -84,9 +93,9 @@ export default function Profile() {
       <PageHeader 
         title="Profile" 
         action={
-          <Button variant="outline" onClick={handleSignOut}>
+          <Button variant="outline" onClick={handleSignOut} disabled={isSigningOut}>
             <LogOutIcon className="mr-2 h-4 w-4" />
-            Sign Out
+            {isSigningOut ? "Signing Out..." : "Sign Out"}
           </Button>
         }
       />
@@ -109,14 +118,31 @@ export default function Profile() {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Your Bookings</CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={fetchBookings}
+              disabled={isLoading}
+            >
+              <RefreshCwIcon className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-center py-4">Loading your bookings...</p>
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="p-4 border rounded-lg">
+                    <Skeleton className="h-5 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/2 mb-2" />
+                    <Skeleton className="h-4 w-1/4" />
+                  </div>
+                ))}
+              </div>
             ) : bookings.length === 0 ? (
-              <p className="text-muted-foreground">No bookings found.</p>
+              <p className="text-muted-foreground py-8 text-center">No bookings found.</p>
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => (
@@ -137,15 +163,6 @@ export default function Profile() {
                 ))}
               </div>
             )}
-            <div className="mt-4 text-center">
-              <Button 
-                variant="outline" 
-                onClick={fetchBookings}
-                className="mt-2"
-              >
-                Refresh Bookings
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>
