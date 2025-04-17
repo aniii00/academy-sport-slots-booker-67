@@ -14,6 +14,7 @@ type Profile = {
   role: string;
   created_at: string;
   updated_at: string;
+  has_set_preferences: boolean | null;
 };
 
 interface AuthContextType {
