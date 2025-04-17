@@ -71,6 +71,10 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   // Format date
   const formattedDate = format(new Date(slot.date), "EEE, dd MMM yyyy");
 
+  // Ensure start and end time are properly formatted
+  const formattedStartTime = slot.start_time.length <= 5 ? slot.start_time : slot.start_time.substring(0, 5);
+  const formattedEndTime = slot.end_time.length <= 5 ? slot.end_time : slot.end_time.substring(0, 5);
+
   // Ensure the slot ID is fully preserved for routing, especially temp IDs
   // that contain venue and sport UUIDs
   const bookingUrl = `/booking?slotId=${encodeURIComponent(slot.id)}`;
@@ -93,7 +97,7 @@ export function SlotCard({ slot, className }: SlotCardProps) {
           <p className="text-sm font-medium">{formattedDate}</p>
           <div className="flex items-center text-gray-500">
             <TimeIcon className="h-4 w-4 mr-1 text-sports-blue" />
-            <span className="text-sm">{slot.start_time} - {slot.end_time}</span>
+            <span className="text-sm">{formattedStartTime} - {formattedEndTime}</span>
           </div>
         </div>
         

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -123,8 +123,10 @@ export default function Booking() {
           if (sportError) throw sportError;
           
           // Create slot object from temp ID
-          const endTime = new Date(`1970-01-01T${time}`);
-          endTime.setMinutes(endTime.getMinutes() + 30);
+          // Fix: Properly format the end time to avoid invalid time value
+          const timeObj = parse(time, 'HH:mm', new Date());
+          const endTimeObj = new Date(timeObj);
+          endTimeObj.setMinutes(endTimeObj.getMinutes() + 30);
           
           const tempSlot: Slot = {
             id: slotId,
@@ -132,7 +134,7 @@ export default function Booking() {
             sport_id: sportId,
             date: date,
             start_time: time,
-            end_time: format(endTime, 'HH:mm:00'),
+            end_time: format(endTimeObj, 'HH:mm:00'),
             price: 0, // Will be determined later
             available: true,
             created_at: new Date().toISOString(),
@@ -283,18 +285,26 @@ export default function Booking() {
     setIsSubmitting(true);
     
     try {
-      const slotDateTime = new Date(`${slot.date}T${slot.start_time}`);
+      // Fix: Create a valid date object for the slot time
+      const dateString = slot.date; // YYYY-MM-DD
+      const timeString = slot.start_time; // HH:MM:SS or HH:MM
+
+      // Create a proper ISO string that JavaScript can parse
+      const isoString = `${dateString}T${timeString.padEnd(8, ':00')}`;
+      console.log("Created ISO string for booking:", isoString);
       
       const booking = {
         user_id: user.id,
         venue_id: venue.id,
         sport_id: sport.id,
         slot_id: slot.id.startsWith('temp-') ? null : slot.id,
-        slot_time: slotDateTime.toISOString(),
+        slot_time: new Date(isoString).toISOString(), // This should now be valid
         status: 'confirmed',
         full_name: name,
         phone: phone
       };
+      
+      console.log("Submitting booking:", booking);
       
       const { data, error } = await supabase
         .from('bookings')
