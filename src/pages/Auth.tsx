@@ -144,4 +144,5 @@ export default function Auth() {
         </p>
       </form>
     </div>
-  );
+  ); // Added this closing parenthesis
+}
