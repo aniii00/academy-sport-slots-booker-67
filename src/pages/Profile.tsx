@@ -15,9 +15,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserIcon, LogOutIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// Define an interface for bookings to work around the missing type
 interface Booking {
   id: string;
   created_at: string;
+  user_id: string;
   // Add other booking fields as needed
 }
 
@@ -37,22 +39,32 @@ export default function Profile() {
   }, [user, navigate]);
 
   const fetchBookings = async () => {
-    const { data, error } = await supabase
-      .from("bookings")
-      .select("*")
-      .eq("user_id", user?.id)
-      .order("created_at", { ascending: false });
+    try {
+      // Use type assertion to work around the type issue
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false }) as any;
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Error fetching bookings",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setBookings(data || []);
+    } catch (error: any) {
+      console.error("Error fetching bookings:", error);
       toast({
         title: "Error fetching bookings",
-        description: error.message,
+        description: error.message || "Could not fetch bookings",
         variant: "destructive",
       });
-      return;
     }
-
-    setBookings(data || []);
   };
 
   const handleSignOut = async () => {
