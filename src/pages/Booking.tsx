@@ -43,17 +43,64 @@ export default function Booking() {
 
     const fetchSlotDetails = async () => {
       if (!slotId) {
+        toast.error("No slot selected");
         navigate("/venue");
         return;
       }
       
       try {
         setIsLoading(true);
+        console.log("Fetching slot with ID:", slotId);
         
         // First, check if this is a temp ID (for newly generated slots)
         if (slotId.startsWith('temp-')) {
-          // Extract details from the temp ID
-          const [_, venueId, sportId, date, time] = slotId.split('-');
+          // Extract details from the temp ID - handle dashes in UUIDs properly
+          const tempParts = slotId.split('-');
+          if (tempParts.length < 6) {
+            throw new Error("Invalid temporary slot ID format");
+          }
+          
+          // Reconstruct venue ID and sport ID properly
+          // Format: temp-venueID-sportID-date-time
+          // Where venueID and sportID might contain dashes themselves
+          const prefix = tempParts[0]; // "temp"
+          
+          // Extract the date and time (last two parts)
+          const time = tempParts[tempParts.length - 1];
+          const date = tempParts[tempParts.length - 2];
+          
+          // Everything between "temp-" and the date is the venue ID and sport ID
+          // We need to determine where venue ID ends and sport ID starts
+          // This is complex due to UUIDs having dashes
+          
+          // For simplicity, let's assume the venue ID is the first UUID after "temp-"
+          // and the sport ID is the second UUID
+          let venueId = "";
+          let sportId = "";
+          let uuidCount = 0;
+          let currentUuid = "";
+          
+          for (let i = 1; i < tempParts.length - 2; i++) {
+            currentUuid += (currentUuid.length > 0 ? '-' : '') + tempParts[i];
+            
+            // A complete UUID has 5 parts (4 dashes)
+            if (currentUuid.split('-').length === 5) {
+              if (uuidCount === 0) {
+                venueId = currentUuid;
+              } else if (uuidCount === 1) {
+                sportId = currentUuid;
+              }
+              uuidCount++;
+              currentUuid = "";
+            }
+          }
+          
+          if (!venueId || !sportId) {
+            throw new Error("Could not extract venue ID or sport ID from temp slot ID");
+          }
+          
+          console.log("Extracted venue ID:", venueId);
+          console.log("Extracted sport ID:", sportId);
           
           // Get venue info
           const { data: venueData, error: venueError } = await supabase
@@ -151,14 +198,18 @@ export default function Booking() {
           tempSlot.price = price;
           setSlot({...tempSlot});
         } else {
-          // Fetch real slot from database
+          // For non-temp IDs, try fetching directly from the database
+          console.log("Fetching regular slot from database");
           const { data: slotData, error: slotError } = await supabase
             .from('slots')
             .select('*')
             .eq('id', slotId)
             .single();
           
-          if (slotError) throw slotError;
+          if (slotError) {
+            console.error("Slot fetch error:", slotError);
+            throw slotError;
+          }
           
           if (!slotData.available) {
             toast.error("This slot is not available for booking");

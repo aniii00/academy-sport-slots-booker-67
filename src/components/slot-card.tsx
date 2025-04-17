@@ -71,7 +71,8 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   // Format date
   const formattedDate = format(new Date(slot.date), "EEE, dd MMM yyyy");
 
-  // Ensure the slot ID is fully preserved for routing
+  // Ensure the slot ID is fully preserved for routing, especially temp IDs
+  // that contain venue and sport UUIDs
   const bookingUrl = `/booking?slotId=${encodeURIComponent(slot.id)}`;
 
   return (
