@@ -1,65 +1,24 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPinIcon, ClockIcon, StarIcon } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import type { Center, Sport, TimeSlot } from "@/data/mockData";
+import { centers, sports, generateTimeSlots, Center, Sport, TimeSlot } from "@/data/mockData";
+
+// Mock user preferences (in a real app, this would come from user profile/database)
+const mockUserPreferences = {
+  location: "Mumbai",
+  favoriteSportId: "sport-2", // Badminton
+  pastBookings: ["center-1", "center-3"]
+};
 
 export function SmartRecommendations() {
-  const { user, profile } = useAuth();
-  const [userPreferences, setUserPreferences] = useState<any>(null);
   const [locationBasedCenters, setLocationBasedCenters] = useState<Center[]>([]);
   const [favoriteSlots, setFavoriteSlots] = useState<TimeSlot[]>([]);
   const [previousCenters, setPreviousCenters] = useState<Center[]>([]);
-  const { toast } = useToast();
   
   useEffect(() => {
-    const fetchUserPreferences = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('user_preferences')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (error) throw error;
-        setUserPreferences(data);
-      } catch (error: any) {
-        console.error("Error fetching user preferences:", error);
-      }
-    };
-
-    fetchUserPreferences();
-  }, [user]);
-
-  // Only show recommendations for logged-in users
-  if (!user) {
-    return (
-      <div className="text-center py-12">
-        <h3 className="text-xl font-semibold mb-2">Sign in to get personalized recommendations</h3>
-        <p className="text-muted-foreground mb-4">
-          We'll help you find the perfect sports venue based on your preferences.
-        </p>
-        <Link to="/auth">
-          <Button>Sign In</Button>
-        </Link>
-      </div>
-    );
-  }
-
-  useEffect(() => {
-    // Mock user preferences (in a real app, this would come from user profile/database)
-    const mockUserPreferences = {
-      location: "Mumbai",
-      favoriteSportId: "sport-2", // Badminton
-      pastBookings: ["center-1", "center-3"]
-    };
-
     // Get centers based on user's location
     const centersInLocation = centers.filter(center => 
       center.city === mockUserPreferences.location
@@ -82,7 +41,7 @@ export function SmartRecommendations() {
   }, []);
 
   // Get sport object for favorite sport
-  const favoriteSport = sports.find(sport => sport.id === "sport-2");
+  const favoriteSport = sports.find(sport => sport.id === mockUserPreferences.favoriteSportId);
   
   return (
     <div className="space-y-6">
