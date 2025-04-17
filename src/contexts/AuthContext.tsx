@@ -5,7 +5,15 @@ import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type Profile = {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: string;
+  created_at: string;
+  updated_at: string;
+};
 
 interface AuthContextType {
   user: User | null;
@@ -35,9 +43,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (session?.user) {
           const { data: profile } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
             .single();
           setProfile(profile);
         } else {
@@ -51,9 +59,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
           .single()
           .then(({ data }) => {
             setProfile(data);
