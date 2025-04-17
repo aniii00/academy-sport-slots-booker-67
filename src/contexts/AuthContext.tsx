@@ -20,6 +20,7 @@ interface AuthContextType {
   profile: Profile | null;
   isAdmin: boolean;
   isLoading: boolean;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,17 +28,20 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   isAdmin: false,
   isLoading: true,
+  signOut: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Setup auth state listener first to catch any auth events during initial load
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         
@@ -59,10 +63,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (session?.user) {
           await fetchProfile(session.user.id);
+        } else {
+          setIsLoading(false);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
-      } finally {
         setIsLoading(false);
       }
     };
@@ -76,6 +81,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log("Fetching profile for user:", userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -84,13 +90,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
       if (error) {
         console.error("Error fetching profile:", error);
+        // If there's an error fetching profile, check if it's a permissions issue
+        if (error.code === '42501' || error.code === '42P17') {
+          // Try signing out and redirecting to auth page if we have RLS issues
+          await signOut();
+          return;
+        }
       } else {
+        console.log("Profile fetched successfully:", data);
         setProfile(data);
       }
     } catch (error) {
-      console.error("Error in profile fetch:", error);
+      console.error("Exception in profile fetch:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      navigate("/auth");
+    } catch (error) {
+      console.error("Error signing out:", error);
     }
   };
 
@@ -99,6 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     profile,
     isAdmin: profile?.role === "admin",
     isLoading,
+    signOut,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

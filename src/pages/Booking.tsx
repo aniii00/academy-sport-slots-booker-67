@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -32,11 +33,12 @@ export default function Booking() {
   const [phone, setPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     if (!user) {
       toast.error("You must be logged in to book a slot");
-      navigate("/auth");
+      navigate("/auth", { replace: true });
       return;
     }
 
@@ -49,6 +51,7 @@ export default function Booking() {
       
       try {
         setIsLoading(true);
+        setError(null);
         console.log("Fetching slot with ID:", slotId);
         
         // First, check if this is a temp ID (for newly generated slots)
@@ -240,8 +243,11 @@ export default function Booking() {
         }
       } catch (error: any) {
         console.error("Error fetching slot:", error);
+        setError(error.message || "Failed to load booking details");
         toast.error("Failed to load booking details");
-        navigate("/slots");
+        setTimeout(() => {
+          navigate("/slots");
+        }, 2000);
       } finally {
         setIsLoading(false);
       }
@@ -324,6 +330,17 @@ export default function Booking() {
     return (
       <div className="text-center py-12">
         <h3 className="text-xl font-semibold mb-2">Loading booking details...</h3>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-xl font-semibold mb-2">Error: {error}</h3>
+        <Button onClick={() => navigate("/slots")} className="mt-4">
+          Return to Slots
+        </Button>
       </div>
     );
   }

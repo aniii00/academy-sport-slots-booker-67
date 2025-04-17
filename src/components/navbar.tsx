@@ -2,16 +2,13 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { HomeIcon, GridIcon, CalendarIcon, UserIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 export function Navbar() {
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isLoading, signOut } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [isSigningOut, setIsSigningOut] = useState(false);
   
   const handleSignOut = async () => {
@@ -19,9 +16,11 @@ export function Navbar() {
     
     setIsSigningOut(true);
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      navigate("/auth");
+      await signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account",
+      });
     } catch (error: any) {
       toast({
         title: "Error signing out",

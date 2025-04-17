@@ -13,16 +13,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Booking } from "@/types/booking";
 
 export default function Profile() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     if (!user) {
-      navigate("/auth");
+      navigate("/auth", { replace: true });
       return;
     }
 
@@ -33,6 +34,7 @@ export default function Profile() {
     if (!user?.id) return;
     
     setIsLoading(true);
+    setError(null);
     try {
       console.log("Fetching bookings for user ID:", user?.id);
       
@@ -48,6 +50,7 @@ export default function Profile() {
 
       if (error) {
         console.error("Error fetching bookings:", error);
+        setError(error.message);
         toast({
           title: "Error fetching bookings",
           description: error.message,
@@ -60,6 +63,7 @@ export default function Profile() {
       setBookings(data || []);
     } catch (error: any) {
       console.error("Error fetching bookings:", error);
+      setError(error.message);
       toast({
         title: "Error fetching bookings",
         description: error.message || "Could not fetch bookings",
@@ -75,9 +79,7 @@ export default function Profile() {
     
     setIsSigningOut(true);
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      navigate("/auth");
+      await signOut();
     } catch (error: any) {
       toast({
         title: "Error signing out",
@@ -87,6 +89,20 @@ export default function Profile() {
       setIsSigningOut(false);
     }
   };
+
+  if (!user) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-xl font-semibold mb-2">Please log in to view your profile</h3>
+        <Button 
+          onClick={() => navigate("/auth")} 
+          className="mt-4"
+        >
+          Go to Login
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container max-w-4xl mx-auto p-4">
@@ -110,7 +126,7 @@ export default function Profile() {
                 </AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle>{profile?.first_name} {profile?.last_name}</CardTitle>
+                <CardTitle>{profile?.first_name || ""} {profile?.last_name || ""}</CardTitle>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
               </div>
             </div>
@@ -140,6 +156,16 @@ export default function Profile() {
                     <Skeleton className="h-4 w-1/4" />
                   </div>
                 ))}
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">{error}</p>
+                <Button 
+                  variant="outline" 
+                  onClick={fetchBookings}
+                >
+                  Try Again
+                </Button>
               </div>
             ) : bookings.length === 0 ? (
               <p className="text-muted-foreground py-8 text-center">No bookings found.</p>
