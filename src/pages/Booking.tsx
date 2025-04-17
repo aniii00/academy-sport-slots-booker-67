@@ -21,11 +21,14 @@ import {
   TimeSlot 
 } from "@/data/mockData";
 import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Booking() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const slotId = searchParams.get('slotId');
+  const { user } = useAuth();
   
   const [slot, setSlot] = useState<TimeSlot | null>(null);
   const [name, setName] = useState("");
@@ -53,8 +56,19 @@ export default function Booking() {
   const center = slot ? centers.find(c => c.id === slot.centerId) : null;
   const sport = slot ? sports.find(s => s.id === slot.sportId) : null;
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast.error("You must be logged in to book a slot");
+      navigate("/auth");
+      return;
+    }
+
+    if (!slot || !center || !sport) {
+      toast.error("Invalid slot selection");
+      return;
+    }
     
     if (!name.trim() || !phone.trim()) {
       toast.error("Please fill in all required fields");
@@ -68,12 +82,31 @@ export default function Booking() {
     
     setIsSubmitting(true);
     
-    // Simulate booking process
-    setTimeout(() => {
+    try {
+      // Save booking to Supabase
+      const { data, error } = await supabase.from('bookings').insert({
+        user_id: user.id,
+        center_name: center.name,
+        sport_type: sport.name,
+        slot_time: new Date(slot.date + 'T' + slot.startTime).toISOString(),
+        status: 'confirmed'
+      });
+      
+      if (error) {
+        console.error("Booking error:", error);
+        toast.error("Failed to save booking: " + error.message);
+        setIsSubmitting(false);
+        return;
+      }
+      
       toast.success("Booking confirmed! You'll receive details on your phone.");
       navigate("/booking-success");
+    } catch (error) {
+      console.error("Booking error:", error);
+      toast.error("An unexpected error occurred");
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
   
   if (!slot || !center || !sport) {

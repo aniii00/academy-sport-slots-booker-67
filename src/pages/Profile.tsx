@@ -29,6 +29,7 @@ interface Booking {
 export default function Profile() {
   const { user, profile } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,7 +43,10 @@ export default function Profile() {
   }, [user, navigate]);
 
   const fetchBookings = async () => {
+    setIsLoading(true);
     try {
+      console.log("Fetching bookings for user ID:", user?.id);
+      
       const { data, error } = await supabase
         .from("bookings")
         .select()
@@ -50,6 +54,7 @@ export default function Profile() {
         .order("created_at", { ascending: false });
 
       if (error) {
+        console.error("Error fetching bookings:", error);
         toast({
           title: "Error fetching bookings",
           description: error.message,
@@ -58,6 +63,7 @@ export default function Profile() {
         return;
       }
 
+      console.log("Bookings fetched:", data);
       setBookings(data || []);
     } catch (error: any) {
       console.error("Error fetching bookings:", error);
@@ -66,6 +72,8 @@ export default function Profile() {
         description: error.message || "Could not fetch bookings",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -117,7 +125,9 @@ export default function Profile() {
             <CardTitle>Your Bookings</CardTitle>
           </CardHeader>
           <CardContent>
-            {bookings.length === 0 ? (
+            {isLoading ? (
+              <p className="text-center py-4">Loading your bookings...</p>
+            ) : bookings.length === 0 ? (
               <p className="text-muted-foreground">No bookings found.</p>
             ) : (
               <div className="space-y-4">
@@ -139,6 +149,15 @@ export default function Profile() {
                 ))}
               </div>
             )}
+            <div className="mt-4 text-center">
+              <Button 
+                variant="outline" 
+                onClick={fetchBookings}
+                className="mt-2"
+              >
+                Refresh Bookings
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

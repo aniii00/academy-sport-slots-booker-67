@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CheckIcon, HomeIcon } from "@/utils/iconMapping";
+import { CheckIcon, HomeIcon, UserIcon } from "@/utils/iconMapping";
 
 export default function BookingSuccess() {
   return (
@@ -18,8 +18,15 @@ export default function BookingSuccess() {
       </p>
       
       <div className="flex flex-col gap-4">
+        <Link to="/profile">
+          <Button className="w-full" variant="default">
+            <UserIcon className="mr-2 h-4 w-4" />
+            View My Bookings
+          </Button>
+        </Link>
+        
         <Link to="/">
-          <Button className="w-full">
+          <Button variant="outline" className="w-full">
             <HomeIcon className="mr-2 h-4 w-4" />
             Return to Home
           </Button>
