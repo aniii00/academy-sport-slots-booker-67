@@ -104,10 +104,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } else if (data) {
         console.log("Profile fetched successfully:", data);
-        // Ensure the data has all the required properties for the Profile type
+        // Cast the data to include favorite_sports, since this might be coming from a joined user_preferences table
+        // or will be extended in the profiles table in a future migration
         setProfile({
           ...data,
-          favorite_sports: data.favorite_sports || null
+          favorite_sports: (data as any).favorite_sports || null
         });
       } else {
         console.log("No profile found for user:", userId);
