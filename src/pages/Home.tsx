@@ -1,4 +1,3 @@
-
 import { PageHeader } from "@/components/ui/page-header";
 import { SportCard } from "@/components/sport-card";
 import { VenueCard } from "@/components/venue-card";
@@ -22,7 +21,7 @@ export default function Home() {
   const [showPreferences, setShowPreferences] = useState(false);
 
   useEffect(() => {
-    if (user && profile && !profile.has_set_preferences) {
+    if (user && profile && profile.has_set_preferences === false) {
       setShowPreferences(true);
     }
   }, [user, profile]);
