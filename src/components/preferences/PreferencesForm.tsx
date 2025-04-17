@@ -42,7 +42,6 @@ export function PreferencesForm({ onComplete, sports }: PreferencesFormProps) {
     
     setIsSubmitting(true);
     try {
-      // Store just the string identifiers for preferred timing, not the actual time values
       const { error: preferencesError } = await supabase
         .from('user_preferences')
         .insert({

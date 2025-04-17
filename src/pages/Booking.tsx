@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -123,113 +123,82 @@ export default function Booking() {
           if (sportError) throw sportError;
           
           // Create slot object from temp ID
-          // Ensure time is in proper format (HH:MM)
-          let formattedStartTime = time;
-          if (!/^\d{2}:\d{2}$/.test(time)) {
-            // Parse time more reliably
-            try {
-              if (time.length === 1 || time.length === 2) {
-                // Just the hour e.g. "9" or "14"
-                const hour = parseInt(time);
-                formattedStartTime = `${hour.toString().padStart(2, '0')}:00`;
-              } else if (time.includes(':')) {
-                // Contains colon, extract hours and minutes
-                const [hours, minutes] = time.split(':');
-                formattedStartTime = `${hours.padStart(2, '0')}:${minutes.substring(0, 2).padEnd(2, '0')}`;
+          const endTime = new Date(`1970-01-01T${time}`);
+          endTime.setMinutes(endTime.getMinutes() + 30);
+          
+          const tempSlot: Slot = {
+            id: slotId,
+            venue_id: venueId,
+            sport_id: sportId,
+            date: date,
+            start_time: time,
+            end_time: format(endTime, 'HH:mm:00'),
+            price: 0, // Will be determined later
+            available: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          setSlot(tempSlot);
+          setVenue(venueData);
+          setSport(sportData);
+          
+          // Determine price
+          const { data: pricingData, error: pricingError } = await supabase
+            .from('venue_pricing')
+            .select('*')
+            .eq('venue_id', venueId);
+          
+          if (pricingError) throw pricingError;
+          
+          const dayOfWeek = format(new Date(date), 'EEEE').toLowerCase();
+          const isMorning = parseInt(time.split(':')[0]) < 12;
+          
+          // Logic to determine price based on pricing rules
+          let price = 500; // Default
+          
+          if (pricingData && pricingData.length > 0) {
+            // Filter by morning/evening
+            const filteredPricing = pricingData.filter(p => p.is_morning === isMorning);
+            
+            // First try day-specific pricing
+            const daySpecificPricing = filteredPricing.find(p => p.day_group.toLowerCase() === dayOfWeek);
+            if (daySpecificPricing) {
+              price = daySpecificPricing.price;
+            } else {
+              // Day group (weekday vs weekend)
+              const isWeekend = ['friday', 'saturday', 'sunday'].includes(dayOfWeek);
+              const hourNum = parseInt(time.split(':')[0]);
+              
+              if (isWeekend) {
+                if (hourNum >= 16 && hourNum < 19) {
+                  const pricing = filteredPricing.find(p => p.day_group === 'friday-sunday' && p.time_range === '16:00-19:00');
+                  if (pricing) price = pricing.price;
+                } else if (hourNum >= 19) {
+                  const pricing = filteredPricing.find(p => p.day_group === 'friday-sunday' && p.time_range === '19:00-00:00');
+                  if (pricing) price = pricing.price;
+                }
+              } else {
+                if (hourNum >= 16 && hourNum < 19) {
+                  const pricing = filteredPricing.find(p => p.day_group === 'monday-thursday' && p.time_range === '16:00-19:00');
+                  if (pricing) price = pricing.price;
+                } else if (hourNum >= 19) {
+                  const pricing = filteredPricing.find(p => p.day_group === 'monday-thursday' && p.time_range === '19:00-00:00');
+                  if (pricing) price = pricing.price;
+                }
               }
-            } catch (e) {
-              console.error("Time parsing error:", e);
+              
+              // Fallback to general pricing
+              if (price === 500) {
+                const generalPricing = filteredPricing.find(p => p.day_group === 'monday-sunday');
+                if (generalPricing) price = generalPricing.price;
+              }
             }
           }
           
-          // Calculate end time (30 minutes after start)
-          try {
-            // Use date-fns to safely parse and format the time
-            const timeObj = parse(formattedStartTime, 'HH:mm', new Date());
-            const endTimeObj = new Date(timeObj);
-            endTimeObj.setMinutes(endTimeObj.getMinutes() + 30);
-            
-            const formattedEndTime = format(endTimeObj, 'HH:mm');
-            console.log("Start time:", formattedStartTime);
-            console.log("Calculated end time:", formattedEndTime);
-            
-            const tempSlot: Slot = {
-              id: slotId,
-              venue_id: venueId,
-              sport_id: sportId,
-              date: date,
-              start_time: formattedStartTime,
-              end_time: formattedEndTime,
-              price: 0, // Will be determined later
-              available: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-            
-            setSlot(tempSlot);
-            setVenue(venueData);
-            setSport(sportData);
-            
-            // Determine price
-            const { data: pricingData, error: pricingError } = await supabase
-              .from('venue_pricing')
-              .select('*')
-              .eq('venue_id', venueId);
-            
-            if (pricingError) throw pricingError;
-            
-            const dayOfWeek = format(new Date(date), 'EEEE').toLowerCase();
-            const hourNum = parseInt(formattedStartTime.split(':')[0]);
-            const isMorning = hourNum < 12;
-            
-            // Logic to determine price based on pricing rules
-            let price = 500; // Default
-            
-            if (pricingData && pricingData.length > 0) {
-              // Filter by morning/evening
-              const filteredPricing = pricingData.filter(p => p.is_morning === isMorning);
-              
-              // First try day-specific pricing
-              const daySpecificPricing = filteredPricing.find(p => p.day_group.toLowerCase() === dayOfWeek);
-              if (daySpecificPricing) {
-                price = daySpecificPricing.price;
-              } else {
-                // Day group (weekday vs weekend)
-                const isWeekend = ['friday', 'saturday', 'sunday'].includes(dayOfWeek);
-                
-                if (isWeekend) {
-                  if (hourNum >= 16 && hourNum < 19) {
-                    const pricing = filteredPricing.find(p => p.day_group === 'friday-sunday' && p.time_range === '16:00-19:00');
-                    if (pricing) price = pricing.price;
-                  } else if (hourNum >= 19) {
-                    const pricing = filteredPricing.find(p => p.day_group === 'friday-sunday' && p.time_range === '19:00-00:00');
-                    if (pricing) price = pricing.price;
-                  }
-                } else {
-                  if (hourNum >= 16 && hourNum < 19) {
-                    const pricing = filteredPricing.find(p => p.day_group === 'monday-thursday' && p.time_range === '16:00-19:00');
-                    if (pricing) price = pricing.price;
-                  } else if (hourNum >= 19) {
-                    const pricing = filteredPricing.find(p => p.day_group === 'monday-thursday' && p.time_range === '19:00-00:00');
-                    if (pricing) price = pricing.price;
-                  }
-                }
-                
-                // Fallback to general pricing
-                if (price === 500) {
-                  const generalPricing = filteredPricing.find(p => p.day_group === 'monday-sunday');
-                  if (generalPricing) price = generalPricing.price;
-                }
-              }
-            }
-            
-            // Update slot with determined price
-            tempSlot.price = price;
-            setSlot({...tempSlot});
-          } catch (timeError) {
-            console.error("Error processing time:", timeError);
-            throw new Error(`Invalid time format: ${time}`);
-          }
+          // Update slot with determined price
+          tempSlot.price = price;
+          setSlot({...tempSlot});
         } else {
           // For non-temp IDs, try fetching directly from the database
           console.log("Fetching regular slot from database");
@@ -275,7 +244,7 @@ export default function Booking() {
       } catch (error: any) {
         console.error("Error fetching slot:", error);
         setError(error.message || "Failed to load booking details");
-        toast.error("Failed to load booking details: " + error.message);
+        toast.error("Failed to load booking details");
         setTimeout(() => {
           navigate("/slots");
         }, 2000);
@@ -314,37 +283,18 @@ export default function Booking() {
     setIsSubmitting(true);
     
     try {
-      // Ensure proper date and time formatting for the booking
-      const dateString = slot.date; // YYYY-MM-DD
-      let timeString = slot.start_time; // Should be HH:MM
-      
-      // Standardize time format to HH:MM
-      if (timeString.length > 5) {
-        timeString = timeString.substring(0, 5);
-      }
-      
-      // Create a properly formatted ISO string
-      const isoString = `${dateString}T${timeString}:00`;
-      console.log("Created ISO string for booking:", isoString);
-      
-      // Validate the date before using it
-      const bookingDate = new Date(isoString);
-      if (isNaN(bookingDate.getTime())) {
-        throw new Error(`Invalid date created: ${isoString}`);
-      }
+      const slotDateTime = new Date(`${slot.date}T${slot.start_time}`);
       
       const booking = {
         user_id: user.id,
         venue_id: venue.id,
         sport_id: sport.id,
         slot_id: slot.id.startsWith('temp-') ? null : slot.id,
-        slot_time: bookingDate.toISOString(),
+        slot_time: slotDateTime.toISOString(),
         status: 'confirmed',
         full_name: name,
         phone: phone
       };
-      
-      console.log("Submitting booking:", booking);
       
       const { data, error } = await supabase
         .from('bookings')
@@ -354,7 +304,8 @@ export default function Booking() {
       
       if (error) {
         console.error("Booking error:", error);
-        throw error;
+        toast.error("Failed to save booking: " + error.message);
+        return;
       }
       
       // If this is a real slot (not temporary), update its availability
@@ -369,7 +320,7 @@ export default function Booking() {
       navigate("/booking-success");
     } catch (error: any) {
       console.error("Booking error:", error);
-      toast.error("An unexpected error occurred: " + error.message);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }
