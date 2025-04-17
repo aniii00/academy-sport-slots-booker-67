@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format, addDays } from "date-fns";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "@/utils/iconMapping";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Venue, Sport, Slot } from "@/types/venue";
+import { Venue, Sport, Slot, VenuePricing } from "@/types/venue";
 import {
   Select,
   SelectContent,
@@ -38,12 +37,10 @@ export default function Slots() {
   const [date, setDate] = useState<Date>(new Date());
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch venues
         const { data: venueData, error: venueError } = await supabase
           .from('venues')
           .select('*');
@@ -51,7 +48,6 @@ export default function Slots() {
         if (venueError) throw venueError;
         setVenues(venueData || []);
         
-        // Fetch sports
         const { data: sportData, error: sportError } = await supabase
           .from('sports')
           .select('*');
@@ -59,7 +55,6 @@ export default function Slots() {
         if (sportError) throw sportError;
         setSports(sportData || []);
         
-        // Set initial selections from URL params
         if (venueId) {
           const venue = venueData?.find(v => v.id === venueId) || null;
           setSelectedVenue(venue);
@@ -80,7 +75,6 @@ export default function Slots() {
     fetchData();
   }, [venueId, sportId]);
   
-  // Update available sports when venue changes
   useEffect(() => {
     const fetchAvailableSports = async () => {
       if (!selectedVenue) {
@@ -102,7 +96,6 @@ export default function Slots() {
           const availableSportsList = sports.filter(sport => sportIds.includes(sport.id));
           setAvailableSports(availableSportsList);
           
-          // If current sport is not available at this venue, reset it
           if (selectedSport && !sportIds.includes(selectedSport.id)) {
             setSelectedSport(availableSportsList.length > 0 ? availableSportsList[0] : null);
           }
@@ -118,7 +111,6 @@ export default function Slots() {
     fetchAvailableSports();
   }, [selectedVenue, sports, selectedSport]);
   
-  // Generate or fetch slots
   useEffect(() => {
     const fetchSlots = async () => {
       if (!selectedVenue || !selectedSport) {
@@ -129,7 +121,6 @@ export default function Slots() {
       try {
         const formattedDate = format(date, 'yyyy-MM-dd');
         
-        // Try to fetch existing slots for this date
         const { data: existingSlots, error: slotsError } = await supabase
           .from('slots')
           .select('*')
@@ -142,7 +133,6 @@ export default function Slots() {
         if (existingSlots && existingSlots.length > 0) {
           setSlots(existingSlots);
         } else {
-          // Generate slots based on venue timings and pricing
           await generateSlotsForDate(selectedVenue.id, selectedSport.id, date);
         }
       } catch (error) {
@@ -159,7 +149,6 @@ export default function Slots() {
       const dayOfWeek = format(selectedDate, 'EEEE').toLowerCase();
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       
-      // Get venue timings for this day
       const { data: timingsData, error: timingsError } = await supabase
         .from('venue_timings')
         .select('*')
@@ -174,7 +163,6 @@ export default function Slots() {
         return;
       }
       
-      // Get pricing for this day
       const { data: pricingData, error: pricingError } = await supabase
         .from('venue_pricing')
         .select('*')
@@ -190,29 +178,23 @@ export default function Slots() {
       
       const generatedSlots: Slot[] = [];
       
-      // Generate slots for each timing
       for (const timing of timingsData) {
         const startTime = new Date(`1970-01-01T${timing.start_time}`);
         const endTime = new Date(`1970-01-01T${timing.end_time}`);
         
-        // Handle midnight crossing
         if (endTime <= startTime) {
           endTime.setDate(endTime.getDate() + 1);
         }
         
-        // Generate 30-minute slots
         let currentTime = new Date(startTime);
         while (currentTime < endTime) {
           const slotStartTime = format(currentTime, 'HH:mm:00');
           
-          // Add 30 minutes for end time
           currentTime.setMinutes(currentTime.getMinutes() + 30);
           const slotEndTime = format(currentTime, 'HH:mm:00');
           
-          // Find applicable pricing
           const price = getSlotPrice(pricingData, dayOfWeek, slotStartTime, timing.is_morning);
           
-          // Create slot
           generatedSlots.push({
             id: `temp-${venueId}-${sportId}-${formattedDate}-${slotStartTime}`,
             venue_id: venueId,
@@ -229,9 +211,6 @@ export default function Slots() {
       }
       
       setSlots(generatedSlots);
-      
-      // TODO: In a production environment, you might want to save these slots
-      // to the database here instead of generating them on the fly
     } catch (error) {
       console.error("Error generating slots:", error);
       toast.error("Failed to generate slots for this date");
@@ -244,16 +223,13 @@ export default function Slots() {
     slotTime: string,
     isMorning: boolean
   ): number => {
-    // Filter by morning/evening
     const filteredPricing = pricingData.filter(p => p.is_morning === isMorning);
     
-    // Check specific day pricing
     const daySpecificPricing = filteredPricing.find(p => p.day_group.toLowerCase() === dayOfWeek);
     if (daySpecificPricing) {
       return daySpecificPricing.price;
     }
     
-    // Group days
     const isWeekend = ['friday', 'saturday', 'sunday'].includes(dayOfWeek);
     
     let applicablePricing: VenuePricing | undefined;
@@ -270,21 +246,19 @@ export default function Slots() {
       );
     }
     
-    // Fallback to any applicable range
     if (!applicablePricing) {
       applicablePricing = filteredPricing.find(p => 
         isTimeInRange(slotTime, p.time_range)
       );
     }
     
-    // Final fallback
     if (!applicablePricing) {
       applicablePricing = filteredPricing.find(p => 
         p.day_group === 'monday-sunday'
       );
     }
     
-    return applicablePricing?.price || 500; // Default price
+    return applicablePricing?.price || 500;
   };
   
   const isTimeInRange = (time: string, range: string): boolean => {
@@ -293,7 +267,6 @@ export default function Slots() {
     const startNum = parseInt(rangeStart);
     let endNum = parseInt(rangeEnd);
     
-    // Handle midnight crossing
     if (endNum < startNum) {
       endNum += 24;
     }
@@ -311,7 +284,6 @@ export default function Slots() {
       />
       
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {/* Venue Selection */}
         <div>
           <label className="block text-sm font-medium mb-1">Select Venue</label>
           <Select 
@@ -334,7 +306,6 @@ export default function Slots() {
           </Select>
         </div>
         
-        {/* Sport Selection */}
         <div>
           <label className="block text-sm font-medium mb-1">Select Sport</label>
           <Select 
@@ -358,7 +329,6 @@ export default function Slots() {
           </Select>
         </div>
         
-        {/* Date Selection */}
         <div>
           <label className="block text-sm font-medium mb-1">Select Date</label>
           <Popover>
