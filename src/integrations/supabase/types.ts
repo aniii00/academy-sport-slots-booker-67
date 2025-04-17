@@ -78,6 +78,7 @@ export type Database = {
           created_at: string
           email: string
           first_name: string | null
+          has_set_preferences: boolean | null
           id: string
           last_name: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -87,6 +88,7 @@ export type Database = {
           created_at?: string
           email: string
           first_name?: string | null
+          has_set_preferences?: boolean | null
           id: string
           last_name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -96,6 +98,7 @@ export type Database = {
           created_at?: string
           email?: string
           first_name?: string | null
+          has_set_preferences?: boolean | null
           id?: string
           last_name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -178,6 +181,36 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          favorite_sports: string[] | null
+          id: string
+          preferred_timing: string[] | null
+          updated_at: string
+          user_id: string
+          venue_type: Database["public"]["Enums"]["venue_type"] | null
+        }
+        Insert: {
+          created_at?: string
+          favorite_sports?: string[] | null
+          id?: string
+          preferred_timing?: string[] | null
+          updated_at?: string
+          user_id: string
+          venue_type?: Database["public"]["Enums"]["venue_type"] | null
+        }
+        Update: {
+          created_at?: string
+          favorite_sports?: string[] | null
+          id?: string
+          preferred_timing?: string[] | null
+          updated_at?: string
+          user_id?: string
+          venue_type?: Database["public"]["Enums"]["venue_type"] | null
         }
         Relationships: []
       }
@@ -344,6 +377,7 @@ export type Database = {
     }
     Enums: {
       user_role: "user" | "admin"
+      venue_type: "indoor" | "outdoor" | "both"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -460,6 +494,7 @@ export const Constants = {
   public: {
     Enums: {
       user_role: ["user", "admin"],
+      venue_type: ["indoor", "outdoor", "both"],
     },
   },
 } as const

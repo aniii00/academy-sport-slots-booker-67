@@ -68,12 +68,18 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   
   if (!venue || !sport) return null;
   
-  // Format date
-  const formattedDate = format(new Date(slot.date), "EEE, dd MMM yyyy");
+  // Format date (safely)
+  let formattedDate;
+  try {
+    formattedDate = format(new Date(slot.date), "EEE, dd MMM yyyy");
+  } catch (error) {
+    console.error("Date formatting error:", error, slot.date);
+    formattedDate = slot.date; // Fallback to raw date string
+  }
 
-  // Ensure the slot ID is fully preserved for routing, especially temp IDs
-  // that contain venue and sport UUIDs
-  const bookingUrl = `/booking?slotId=${encodeURIComponent(slot.id)}`;
+  // Create a safe booking URL with properly encoded parameters
+  const slotId = encodeURIComponent(slot.id);
+  const bookingUrl = `/booking?slotId=${slotId}`;
 
   return (
     <Card className={cn("transition-all hover:shadow-lg rounded-2xl", className)}>
