@@ -1,12 +1,15 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { PageHeader } from "@/components/ui/page-header";
 import { SlotCard } from "@/components/slot-card";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "@/utils/iconMapping";
+import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Venue, Sport, Slot } from "@/types/venue";
 import {
   Select,
   SelectContent,
@@ -19,97 +22,312 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { 
-  centers, 
-  sports, 
-  getSportsForCenter, 
-  generateTimeSlots, 
-  TimeSlot 
-} from "@/data/mockData";
 
 export default function Slots() {
   const [searchParams] = useSearchParams();
-  const centerId = searchParams.get('centerId');
+  const venueId = searchParams.get('venueId');
   const sportId = searchParams.get('sportId');
   
-  const [selectedCenter, setSelectedCenter] = useState(
-    centerId ? centers.find(c => c.id === centerId) : null
-  );
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [sports, setSports] = useState<Sport[]>([]);
+  const [availableSports, setAvailableSports] = useState<Sport[]>([]);
+  const [slots, setSlots] = useState<Slot[]>([]);
   
-  const [selectedSport, setSelectedSport] = useState(
-    sportId ? sports.find(s => s.id === sportId) : null
-  );
-  
-  const [availableSports, setAvailableSports] = useState(
-    selectedCenter ? getSportsForCenter(selectedCenter.id) : []
-  );
-  
+  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+  const [selectedSport, setSelectedSport] = useState<Sport | null>(null);
   const [date, setDate] = useState<Date>(new Date());
-  const [slots, setSlots] = useState<TimeSlot[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Load slots when center, sport, or date changes
+  // Fetch initial data
   useEffect(() => {
-    if (selectedCenter && selectedSport) {
-      const allSlots = generateTimeSlots();
-      const dateStr = format(date, "yyyy-MM-dd");
-      
-      const filtered = allSlots.filter(slot => 
-        slot.centerId === selectedCenter.id && 
-        slot.sportId === selectedSport.id &&
-        slot.date === dateStr
-      );
-      
-      setSlots(filtered);
-    }
-  }, [selectedCenter, selectedSport, date]);
-  
-  // Update available sports when center changes
-  useEffect(() => {
-    if (selectedCenter) {
-      const sports = getSportsForCenter(selectedCenter.id);
-      setAvailableSports(sports);
-      
-      // If current sport is not available at this center, reset it
-      if (selectedSport && !selectedCenter.sports.includes(selectedSport.id)) {
-        setSelectedSport(sports.length > 0 ? sports[0] : null);
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch venues
+        const { data: venueData, error: venueError } = await supabase
+          .from('venues')
+          .select('*');
+        
+        if (venueError) throw venueError;
+        setVenues(venueData || []);
+        
+        // Fetch sports
+        const { data: sportData, error: sportError } = await supabase
+          .from('sports')
+          .select('*');
+        
+        if (sportError) throw sportError;
+        setSports(sportData || []);
+        
+        // Set initial selections from URL params
+        if (venueId) {
+          const venue = venueData?.find(v => v.id === venueId) || null;
+          setSelectedVenue(venue);
+        }
+        
+        if (sportId) {
+          const sport = sportData?.find(s => s.id === sportId) || null;
+          setSelectedSport(sport);
+        }
+      } catch (error) {
+        console.error("Error fetching initial data:", error);
+        toast.error("Failed to load venues and sports");
+      } finally {
+        setIsLoading(false);
       }
-    }
-  }, [selectedCenter]);
+    };
+    
+    fetchData();
+  }, [venueId, sportId]);
   
-  // If we have centerId but no sportId, select the first sport
+  // Update available sports when venue changes
   useEffect(() => {
-    if (selectedCenter && !selectedSport && availableSports.length > 0) {
-      setSelectedSport(availableSports[0]);
+    const fetchAvailableSports = async () => {
+      if (!selectedVenue) {
+        setAvailableSports([]);
+        return;
+      }
+      
+      try {
+        const { data: venueSportsData, error: venueSportsError } = await supabase
+          .from('venue_sports')
+          .select('sport_id')
+          .eq('venue_id', selectedVenue.id);
+        
+        if (venueSportsError) throw venueSportsError;
+        
+        if (venueSportsData && venueSportsData.length > 0) {
+          const sportIds = venueSportsData.map(vs => vs.sport_id);
+          
+          const availableSportsList = sports.filter(sport => sportIds.includes(sport.id));
+          setAvailableSports(availableSportsList);
+          
+          // If current sport is not available at this venue, reset it
+          if (selectedSport && !sportIds.includes(selectedSport.id)) {
+            setSelectedSport(availableSportsList.length > 0 ? availableSportsList[0] : null);
+          }
+        } else {
+          setAvailableSports([]);
+        }
+      } catch (error) {
+        console.error("Error fetching available sports:", error);
+        toast.error("Failed to load available sports for this venue");
+      }
+    };
+    
+    fetchAvailableSports();
+  }, [selectedVenue, sports, selectedSport]);
+  
+  // Generate or fetch slots
+  useEffect(() => {
+    const fetchSlots = async () => {
+      if (!selectedVenue || !selectedSport) {
+        setSlots([]);
+        return;
+      }
+      
+      try {
+        const formattedDate = format(date, 'yyyy-MM-dd');
+        
+        // Try to fetch existing slots for this date
+        const { data: existingSlots, error: slotsError } = await supabase
+          .from('slots')
+          .select('*')
+          .eq('venue_id', selectedVenue.id)
+          .eq('sport_id', selectedSport.id)
+          .eq('date', formattedDate);
+        
+        if (slotsError) throw slotsError;
+        
+        if (existingSlots && existingSlots.length > 0) {
+          setSlots(existingSlots);
+        } else {
+          // Generate slots based on venue timings and pricing
+          await generateSlotsForDate(selectedVenue.id, selectedSport.id, date);
+        }
+      } catch (error) {
+        console.error("Error fetching slots:", error);
+        toast.error("Failed to load available slots");
+      }
+    };
+    
+    fetchSlots();
+  }, [selectedVenue, selectedSport, date]);
+  
+  const generateSlotsForDate = async (venueId: string, sportId: string, selectedDate: Date) => {
+    try {
+      const dayOfWeek = format(selectedDate, 'EEEE').toLowerCase();
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      
+      // Get venue timings for this day
+      const { data: timingsData, error: timingsError } = await supabase
+        .from('venue_timings')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('day_of_week', dayOfWeek);
+      
+      if (timingsError) throw timingsError;
+      
+      if (!timingsData || timingsData.length === 0) {
+        toast.info(`No timings available for ${format(selectedDate, 'EEEE')}`);
+        setSlots([]);
+        return;
+      }
+      
+      // Get pricing for this day
+      const { data: pricingData, error: pricingError } = await supabase
+        .from('venue_pricing')
+        .select('*')
+        .eq('venue_id', venueId);
+      
+      if (pricingError) throw pricingError;
+      
+      if (!pricingData || pricingData.length === 0) {
+        toast.error("No pricing information available");
+        setSlots([]);
+        return;
+      }
+      
+      const generatedSlots: Slot[] = [];
+      
+      // Generate slots for each timing
+      for (const timing of timingsData) {
+        const startTime = new Date(`1970-01-01T${timing.start_time}`);
+        const endTime = new Date(`1970-01-01T${timing.end_time}`);
+        
+        // Handle midnight crossing
+        if (endTime <= startTime) {
+          endTime.setDate(endTime.getDate() + 1);
+        }
+        
+        // Generate 30-minute slots
+        let currentTime = new Date(startTime);
+        while (currentTime < endTime) {
+          const slotStartTime = format(currentTime, 'HH:mm:00');
+          
+          // Add 30 minutes for end time
+          currentTime.setMinutes(currentTime.getMinutes() + 30);
+          const slotEndTime = format(currentTime, 'HH:mm:00');
+          
+          // Find applicable pricing
+          const price = getSlotPrice(pricingData, dayOfWeek, slotStartTime, timing.is_morning);
+          
+          // Create slot
+          generatedSlots.push({
+            id: `temp-${venueId}-${sportId}-${formattedDate}-${slotStartTime}`,
+            venue_id: venueId,
+            sport_id: sportId,
+            date: formattedDate,
+            start_time: slotStartTime,
+            end_time: slotEndTime,
+            price,
+            available: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        }
+      }
+      
+      setSlots(generatedSlots);
+      
+      // TODO: In a production environment, you might want to save these slots
+      // to the database here instead of generating them on the fly
+    } catch (error) {
+      console.error("Error generating slots:", error);
+      toast.error("Failed to generate slots for this date");
     }
-  }, [selectedCenter, selectedSport, availableSports]);
+  };
+  
+  const getSlotPrice = (
+    pricingData: VenuePricing[], 
+    dayOfWeek: string, 
+    slotTime: string,
+    isMorning: boolean
+  ): number => {
+    // Filter by morning/evening
+    const filteredPricing = pricingData.filter(p => p.is_morning === isMorning);
+    
+    // Check specific day pricing
+    const daySpecificPricing = filteredPricing.find(p => p.day_group.toLowerCase() === dayOfWeek);
+    if (daySpecificPricing) {
+      return daySpecificPricing.price;
+    }
+    
+    // Group days
+    const isWeekend = ['friday', 'saturday', 'sunday'].includes(dayOfWeek);
+    
+    let applicablePricing: VenuePricing | undefined;
+    
+    if (isWeekend) {
+      applicablePricing = filteredPricing.find(p => 
+        p.day_group === 'friday-sunday' && 
+        isTimeInRange(slotTime, p.time_range)
+      );
+    } else {
+      applicablePricing = filteredPricing.find(p => 
+        p.day_group === 'monday-thursday' && 
+        isTimeInRange(slotTime, p.time_range)
+      );
+    }
+    
+    // Fallback to any applicable range
+    if (!applicablePricing) {
+      applicablePricing = filteredPricing.find(p => 
+        isTimeInRange(slotTime, p.time_range)
+      );
+    }
+    
+    // Final fallback
+    if (!applicablePricing) {
+      applicablePricing = filteredPricing.find(p => 
+        p.day_group === 'monday-sunday'
+      );
+    }
+    
+    return applicablePricing?.price || 500; // Default price
+  };
+  
+  const isTimeInRange = (time: string, range: string): boolean => {
+    const [rangeStart, rangeEnd] = range.split('-');
+    const timeNum = parseInt(time.split(':')[0]);
+    const startNum = parseInt(rangeStart);
+    let endNum = parseInt(rangeEnd);
+    
+    // Handle midnight crossing
+    if (endNum < startNum) {
+      endNum += 24;
+    }
+    
+    return timeNum >= startNum && timeNum < endNum;
+  };
   
   return (
     <div>
       <PageHeader 
         title="Available Slots" 
-        subtitle={selectedCenter ? `at ${selectedCenter.name}` : "Select a center and sport"}
+        subtitle={selectedVenue ? `at ${selectedVenue.name}` : "Select a venue and sport"}
         showBackButton
-        backTo="/centers"
+        backTo="/venue"
       />
       
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {/* Center Selection */}
+        {/* Venue Selection */}
         <div>
-          <label className="block text-sm font-medium mb-1">Select Center</label>
+          <label className="block text-sm font-medium mb-1">Select Venue</label>
           <Select 
-            value={selectedCenter?.id} 
+            value={selectedVenue?.id} 
             onValueChange={(value) => {
-              const center = centers.find(c => c.id === value);
-              setSelectedCenter(center || null);
+              const venue = venues.find(v => v.id === value);
+              setSelectedVenue(venue || null);
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select a center" />
+              <SelectValue placeholder="Select a venue" />
             </SelectTrigger>
             <SelectContent>
-              {centers.map((center) => (
-                <SelectItem key={center.id} value={center.id}>
-                  {center.name}
+              {venues.map((venue) => (
+                <SelectItem key={venue.id} value={venue.id}>
+                  {venue.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -125,7 +343,7 @@ export default function Slots() {
               const sport = sports.find(s => s.id === value);
               setSelectedSport(sport || null);
             }}
-            disabled={!selectedCenter || availableSports.length === 0}
+            disabled={!selectedVenue || availableSports.length === 0}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a sport" />
@@ -148,7 +366,7 @@ export default function Slots() {
               <Button
                 variant="outline"
                 className="w-full justify-start text-left font-normal"
-                disabled={!selectedCenter || !selectedSport}
+                disabled={!selectedVenue || !selectedSport}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {date ? format(date, "PPP") : "Pick a date"}
@@ -160,13 +378,18 @@ export default function Slots() {
                 selected={date}
                 onSelect={(newDate) => setDate(newDate || new Date())}
                 initialFocus
+                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0)) || date > addDays(new Date(), 30)}
               />
             </PopoverContent>
           </Popover>
         </div>
       </div>
       
-      {selectedCenter && selectedSport ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <h3 className="text-xl font-semibold mb-2">Loading...</h3>
+        </div>
+      ) : selectedVenue && selectedSport ? (
         slots.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {slots.map((slot) => (
@@ -181,8 +404,8 @@ export default function Slots() {
         )
       ) : (
         <div className="text-center py-12">
-          <h3 className="text-xl font-semibold mb-2">Select a center and sport</h3>
-          <p className="text-gray-500">Choose a center and sport to view available slots</p>
+          <h3 className="text-xl font-semibold mb-2">Select a venue and sport</h3>
+          <p className="text-gray-500">Choose a venue and sport to view available slots</p>
         </div>
       )}
     </div>

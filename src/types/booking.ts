@@ -8,4 +8,7 @@ export interface Booking {
   status: string;
   created_at: string;
   updated_at: string;
+  venue_id?: string;
+  sport_id?: string;
+  slot_id?: string;
 }

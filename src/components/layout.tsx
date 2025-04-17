@@ -43,13 +43,13 @@ export function Layout() {
             </Link>
             
             <Link 
-              to="/centers" 
+              to="/venue" 
               className={`flex flex-col items-center justify-center flex-1 py-2 ${
-                isActive('/centers') ? 'text-sports-blue' : 'text-gray-500'
+                isActive('/venue') ? 'text-sports-blue' : 'text-gray-500'
               }`}
             >
               <GridIcon className="h-6 w-6" />
-              <span className="text-xs mt-1">Centers</span>
+              <span className="text-xs mt-1">Venues</span>
             </Link>
             
             <Link 
@@ -63,9 +63,9 @@ export function Layout() {
             </Link>
             
             <Link 
-              to="/admin" 
+              to="/profile" 
               className={`flex flex-col items-center justify-center flex-1 py-2 ${
-                isActive('/admin') ? 'text-sports-blue' : 'text-gray-500'
+                isActive('/profile') ? 'text-sports-blue' : 'text-gray-500'
               }`}
             >
               <UserIcon className="h-6 w-6" />

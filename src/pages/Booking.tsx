@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -13,15 +14,10 @@ import {
   UserIcon, 
   PhoneIcon 
 } from "@/utils/iconMapping";
-import { 
-  centers, 
-  sports, 
-  generateTimeSlots, 
-  TimeSlot 
-} from "@/data/mockData";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Slot, Venue, Sport } from "@/types/venue";
 import type { Booking } from "@/types/booking";
 
 export default function Booking() {
@@ -30,28 +26,179 @@ export default function Booking() {
   const slotId = searchParams.get('slotId');
   const { user } = useAuth();
   
-  const [slot, setSlot] = useState<TimeSlot | null>(null);
+  const [slot, setSlot] = useState<Slot | null>(null);
+  const [venue, setVenue] = useState<Venue | null>(null);
+  const [sport, setSport] = useState<Sport | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    if (slotId) {
-      const allSlots = generateTimeSlots();
-      const foundSlot = allSlots.find(s => s.id === slotId);
-      if (foundSlot && foundSlot.available) {
-        setSlot(foundSlot);
-      } else {
-        toast.error("This slot is not available for booking");
-        navigate("/slots");
-      }
-    } else {
-      navigate("/slots");
+    if (!user) {
+      toast.error("You must be logged in to book a slot");
+      navigate("/auth");
+      return;
     }
-  }, [slotId, navigate]);
-  
-  const center = slot ? centers.find(c => c.id === slot.centerId) : null;
-  const sport = slot ? sports.find(s => s.id === slot.sportId) : null;
+
+    const fetchSlotDetails = async () => {
+      if (!slotId) {
+        navigate("/venue");
+        return;
+      }
+      
+      try {
+        setIsLoading(true);
+        
+        // First, check if this is a temp ID (for newly generated slots)
+        if (slotId.startsWith('temp-')) {
+          // Extract details from the temp ID
+          const [_, venueId, sportId, date, time] = slotId.split('-');
+          
+          // Get venue info
+          const { data: venueData, error: venueError } = await supabase
+            .from('venues')
+            .select('*')
+            .eq('id', venueId)
+            .single();
+          
+          if (venueError) throw venueError;
+          
+          // Get sport info
+          const { data: sportData, error: sportError } = await supabase
+            .from('sports')
+            .select('*')
+            .eq('id', sportId)
+            .single();
+          
+          if (sportError) throw sportError;
+          
+          // Create slot object from temp ID
+          const endTime = new Date(`1970-01-01T${time}`);
+          endTime.setMinutes(endTime.getMinutes() + 30);
+          
+          const tempSlot: Slot = {
+            id: slotId,
+            venue_id: venueId,
+            sport_id: sportId,
+            date: date,
+            start_time: time,
+            end_time: format(endTime, 'HH:mm:00'),
+            price: 0, // Will be determined later
+            available: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          setSlot(tempSlot);
+          setVenue(venueData);
+          setSport(sportData);
+          
+          // Determine price
+          const { data: pricingData, error: pricingError } = await supabase
+            .from('venue_pricing')
+            .select('*')
+            .eq('venue_id', venueId);
+          
+          if (pricingError) throw pricingError;
+          
+          const dayOfWeek = format(new Date(date), 'EEEE').toLowerCase();
+          const isMorning = parseInt(time.split(':')[0]) < 12;
+          
+          // Logic to determine price based on pricing rules
+          let price = 500; // Default
+          
+          if (pricingData && pricingData.length > 0) {
+            // Filter by morning/evening
+            const filteredPricing = pricingData.filter(p => p.is_morning === isMorning);
+            
+            // First try day-specific pricing
+            const daySpecificPricing = filteredPricing.find(p => p.day_group.toLowerCase() === dayOfWeek);
+            if (daySpecificPricing) {
+              price = daySpecificPricing.price;
+            } else {
+              // Day group (weekday vs weekend)
+              const isWeekend = ['friday', 'saturday', 'sunday'].includes(dayOfWeek);
+              const hourNum = parseInt(time.split(':')[0]);
+              
+              if (isWeekend) {
+                if (hourNum >= 16 && hourNum < 19) {
+                  const pricing = filteredPricing.find(p => p.day_group === 'friday-sunday' && p.time_range === '16:00-19:00');
+                  if (pricing) price = pricing.price;
+                } else if (hourNum >= 19) {
+                  const pricing = filteredPricing.find(p => p.day_group === 'friday-sunday' && p.time_range === '19:00-00:00');
+                  if (pricing) price = pricing.price;
+                }
+              } else {
+                if (hourNum >= 16 && hourNum < 19) {
+                  const pricing = filteredPricing.find(p => p.day_group === 'monday-thursday' && p.time_range === '16:00-19:00');
+                  if (pricing) price = pricing.price;
+                } else if (hourNum >= 19) {
+                  const pricing = filteredPricing.find(p => p.day_group === 'monday-thursday' && p.time_range === '19:00-00:00');
+                  if (pricing) price = pricing.price;
+                }
+              }
+              
+              // Fallback to general pricing
+              if (price === 500) {
+                const generalPricing = filteredPricing.find(p => p.day_group === 'monday-sunday');
+                if (generalPricing) price = generalPricing.price;
+              }
+            }
+          }
+          
+          // Update slot with determined price
+          tempSlot.price = price;
+          setSlot({...tempSlot});
+        } else {
+          // Fetch real slot from database
+          const { data: slotData, error: slotError } = await supabase
+            .from('slots')
+            .select('*')
+            .eq('id', slotId)
+            .single();
+          
+          if (slotError) throw slotError;
+          
+          if (!slotData.available) {
+            toast.error("This slot is not available for booking");
+            navigate("/slots");
+            return;
+          }
+          
+          setSlot(slotData);
+          
+          // Get venue info
+          const { data: venueData, error: venueError } = await supabase
+            .from('venues')
+            .select('*')
+            .eq('id', slotData.venue_id)
+            .single();
+          
+          if (venueError) throw venueError;
+          setVenue(venueData);
+          
+          // Get sport info
+          const { data: sportData, error: sportError } = await supabase
+            .from('sports')
+            .select('*')
+            .eq('id', slotData.sport_id)
+            .single();
+          
+          if (sportError) throw sportError;
+          setSport(sportData);
+        }
+      } catch (error: any) {
+        console.error("Error fetching slot:", error);
+        toast.error("Failed to load booking details");
+        navigate("/slots");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchSlotDetails();
+  }, [slotId, navigate, user]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +209,7 @@ export default function Booking() {
       return;
     }
 
-    if (!slot || !center || !sport) {
+    if (!slot || !venue || !sport) {
       toast.error("Invalid slot selection");
       return;
     }
@@ -80,26 +227,40 @@ export default function Booking() {
     setIsSubmitting(true);
     
     try {
+      const slotDateTime = new Date(`${slot.date}T${slot.start_time}`);
+      
+      const booking = {
+        user_id: user.id,
+        center_name: venue.name,
+        sport_type: sport.name,
+        slot_time: slotDateTime.toISOString(),
+        status: 'confirmed',
+        venue_id: venue.id,
+        sport_id: sport.id,
+        slot_id: slot.id.startsWith('temp-') ? null : slot.id // Only use real slot IDs
+      };
+      
       const { data, error } = await supabase
         .from('bookings')
-        .insert({
-          user_id: user.id,
-          center_name: center.name,
-          sport_type: sport.name,
-          slot_time: new Date(slot.date + 'T' + slot.startTime).toISOString(),
-          status: 'confirmed'
-        });
+        .insert(booking);
       
       if (error) {
         console.error("Booking error:", error);
         toast.error("Failed to save booking: " + error.message);
-        setIsSubmitting(false);
         return;
+      }
+      
+      // If this is a real slot (not temporary), update its availability
+      if (!slot.id.startsWith('temp-')) {
+        await supabase
+          .from('slots')
+          .update({ available: false })
+          .eq('id', slot.id);
       }
       
       toast.success("Booking confirmed! You'll receive details on your phone.");
       navigate("/booking-success");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Booking error:", error);
       toast.error("An unexpected error occurred");
     } finally {
@@ -107,10 +268,21 @@ export default function Booking() {
     }
   };
   
-  if (!slot || !center || !sport) {
+  if (isLoading) {
     return (
       <div className="text-center py-12">
         <h3 className="text-xl font-semibold mb-2">Loading booking details...</h3>
+      </div>
+    );
+  }
+  
+  if (!slot || !venue || !sport) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-xl font-semibold mb-2">Invalid booking details</h3>
+        <Button onClick={() => navigate("/slots")} className="mt-4">
+          Return to Slots
+        </Button>
       </div>
     );
   }
@@ -123,7 +295,7 @@ export default function Booking() {
         title="Complete Your Booking" 
         subtitle="Enter your details to confirm the reservation"
         showBackButton
-        backTo={`/slots?centerId=${center.id}&sportId=${sport.id}`}
+        backTo={`/slots?venueId=${venue.id}&sportId=${sport.id}`}
       />
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -138,12 +310,12 @@ export default function Booking() {
               </div>
               
               <div>
-                <h4 className="font-medium">Center</h4>
+                <h4 className="font-medium">Venue</h4>
                 <div className="flex items-start">
                   <LocationIcon className="h-5 w-5 mr-2 mt-0.5 text-gray-500" />
                   <div>
-                    <p className="text-lg">{center.name}</p>
-                    <p className="text-gray-500">{center.address}</p>
+                    <p className="text-lg">{venue.name}</p>
+                    <p className="text-gray-500">{venue.address}</p>
                   </div>
                 </div>
               </div>
@@ -152,7 +324,7 @@ export default function Booking() {
                 <h4 className="font-medium">Date & Time</h4>
                 <div className="flex items-center">
                   <TimeIcon className="h-5 w-5 mr-2 text-gray-500" />
-                  <p>{formattedDate}, {slot.startTime} - {slot.endTime}</p>
+                  <p>{formattedDate}, {slot.start_time} - {slot.end_time}</p>
                 </div>
               </div>
               

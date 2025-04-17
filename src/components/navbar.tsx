@@ -38,7 +38,7 @@ export function Navbar() {
           
           <nav className="hidden md:flex items-center gap-4">
             <Link to="/" className="text-gray-600 hover:text-sports-blue">Home</Link>
-            <Link to="/centers" className="text-gray-600 hover:text-sports-blue">Centers</Link>
+            <Link to="/venue" className="text-gray-600 hover:text-sports-blue">Venues</Link>
             {isAdmin && (
               <Link to="/admin" className="text-gray-600 hover:text-sports-blue">Admin</Link>
             )}

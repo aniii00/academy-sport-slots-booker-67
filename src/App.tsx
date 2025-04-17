@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,7 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "./components/layout";
 import { AuthProvider } from "./contexts/AuthContext";
 import Home from "./pages/Home";
-import Centers from "./pages/Centers";
+import Venue from "./pages/Venue";
 import Slots from "./pages/Slots";
 import Booking from "./pages/Booking";
 import BookingSuccess from "./pages/BookingSuccess";
@@ -36,7 +37,7 @@ const App = () => (
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
-              <Route path="/centers" element={<Centers />} />
+              <Route path="/venue" element={<Venue />} />
               <Route path="/slots" element={<Slots />} />
               <Route path="/booking" element={<Booking />} />
               <Route path="/booking-success" element={<BookingSuccess />} />

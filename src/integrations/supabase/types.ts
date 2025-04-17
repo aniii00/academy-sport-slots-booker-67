@@ -14,33 +14,64 @@ export type Database = {
           center_name: string
           created_at: string
           id: string
+          slot_id: string | null
           slot_time: string
+          sport_id: string | null
           sport_type: string
           status: string
           updated_at: string
           user_id: string
+          venue_id: string | null
         }
         Insert: {
           center_name: string
           created_at?: string
           id?: string
+          slot_id?: string | null
           slot_time: string
+          sport_id?: string | null
           sport_type: string
           status?: string
           updated_at?: string
           user_id: string
+          venue_id?: string | null
         }
         Update: {
           center_name?: string
           created_at?: string
           id?: string
+          slot_id?: string | null
           slot_time?: string
+          sport_id?: string | null
           sport_type?: string
           status?: string
           updated_at?: string
           user_id?: string
+          venue_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bookings_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_sport_id_fkey"
+            columns: ["sport_id"]
+            isOneToOne: false
+            referencedRelation: "sports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -68,6 +99,238 @@ export type Database = {
           id?: string
           last_name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      slots: {
+        Row: {
+          available: boolean
+          created_at: string
+          date: string
+          end_time: string
+          id: string
+          price: number
+          sport_id: string
+          start_time: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          available?: boolean
+          created_at?: string
+          date: string
+          end_time: string
+          id?: string
+          price: number
+          sport_id: string
+          start_time: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          date?: string
+          end_time?: string
+          id?: string
+          price?: number
+          sport_id?: string
+          start_time?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slots_sport_id_fkey"
+            columns: ["sport_id"]
+            isOneToOne: false
+            referencedRelation: "sports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slots_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sports: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      venue_pricing: {
+        Row: {
+          created_at: string
+          day_group: string
+          id: string
+          is_morning: boolean
+          per_duration: string
+          price: number
+          time_range: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_group: string
+          id?: string
+          is_morning: boolean
+          per_duration?: string
+          price: number
+          time_range: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          day_group?: string
+          id?: string
+          is_morning?: boolean
+          per_duration?: string
+          price?: number
+          time_range?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_pricing_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_sports: {
+        Row: {
+          created_at: string
+          id: string
+          sport_id: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sport_id: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sport_id?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_sports_sport_id_fkey"
+            columns: ["sport_id"]
+            isOneToOne: false
+            referencedRelation: "sports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_sports_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_timings: {
+        Row: {
+          created_at: string
+          day_of_week: string
+          end_time: string
+          id: string
+          is_morning: boolean
+          start_time: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: string
+          end_time: string
+          id?: string
+          is_morning: boolean
+          start_time: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: string
+          end_time?: string
+          id?: string
+          is_morning?: boolean
+          start_time?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_timings_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venues: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          image: string | null
+          location: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          image?: string | null
+          location: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          image?: string | null
+          location?: string
+          name?: string
           updated_at?: string
         }
         Relationships: []
