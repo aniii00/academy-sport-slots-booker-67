@@ -10,8 +10,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sport, Venue } from "@/types/venue";
 import { toast } from "@/components/ui/sonner";
-import { useAuth } from "@/contexts/AuthContext";
-import { PreferencesDialog } from "@/components/preferences/PreferencesDialog";
+import { useAuth } from "@/hooks/auth";
 
 export default function Home() {
   const { user, profile } = useAuth();
@@ -21,7 +20,7 @@ export default function Home() {
   const [showPreferences, setShowPreferences] = useState(false);
 
   useEffect(() => {
-    if (user && profile && profile.has_set_preferences === false) {
+    if (user && profile && !profile.has_set_preferences) {
       setShowPreferences(true);
     }
   }, [user, profile]);
