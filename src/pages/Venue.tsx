@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { VenueCard } from "@/components/venue-card";
 import { FilterBar, FilterState } from "@/components/filter-bar";
 import { supabase } from "@/integrations/supabase/client";
-import { Venue, Sport } from "@/types/venue";
+import type { Venue, Sport } from "@/types/venue";
 import { toast } from "@/components/ui/sonner";
 
 export default function Venue() {
