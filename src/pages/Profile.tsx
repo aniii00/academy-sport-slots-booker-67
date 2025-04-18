@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -96,6 +96,63 @@ export default function Profile() {
         variant: "destructive",
       });
       setIsSigningOut(false);
+    }
+  };
+
+  // Helper function to format dates properly
+  const formatBookingDate = (dateStr: string) => {
+    try {
+      // First attempt to parse as ISO string (might have timezone info)
+      let date = parseISO(dateStr);
+      
+      // Check if valid
+      if (!isValid(date)) {
+        // Try parsing as YYYY-MM-DD HH:MM:SS format
+        if (dateStr.includes(' ')) {
+          const [datePart, timePart] = dateStr.split(' ');
+          date = new Date(`${datePart}T${timePart}`);
+        } else {
+          // Last resort - try direct Date constructor
+          date = new Date(dateStr);
+        }
+      }
+      
+      if (!isValid(date)) {
+        return "Invalid date";
+      }
+      
+      return format(date, 'EEEE, MMMM d, yyyy');
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return "Date format error";
+    }
+  };
+  
+  const formatBookingTime = (dateStr: string) => {
+    try {
+      // First attempt to parse as ISO string
+      let date = parseISO(dateStr);
+      
+      // Check if valid
+      if (!isValid(date)) {
+        // Try parsing as YYYY-MM-DD HH:MM:SS format
+        if (dateStr.includes(' ')) {
+          const [datePart, timePart] = dateStr.split(' ');
+          date = new Date(`${datePart}T${timePart}`);
+        } else {
+          // Last resort - try direct Date constructor
+          date = new Date(dateStr);
+        }
+      }
+      
+      if (!isValid(date)) {
+        return "Invalid time";
+      }
+      
+      return format(date, 'h:mm a');
+    } catch (e) {
+      console.error("Error formatting time:", e);
+      return "Time format error";
     }
   };
 
@@ -188,10 +245,10 @@ export default function Profile() {
                             {booking.sports?.name} at {booking.venues?.name}
                           </h4>
                           <p className="text-sm text-gray-600">
-                            {format(new Date(booking.slot_time), 'EEEE, MMMM d, yyyy')}
+                            {formatBookingDate(booking.slot_time)}
                           </p>
                           <p className="text-sm text-gray-600">
-                            {format(new Date(booking.slot_time), 'h:mm a')}
+                            {formatBookingTime(booking.slot_time)}
                           </p>
                         </div>
                         <div className="text-right">

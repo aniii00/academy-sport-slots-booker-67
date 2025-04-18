@@ -11,7 +11,7 @@ export interface Booking {
   phone: string;
   created_at: string;
   updated_at: string;
-  amount: number; // Add the amount property
+  amount: number;
   // Add nested relationships for venues and sports
   venues?: { 
     name: string;

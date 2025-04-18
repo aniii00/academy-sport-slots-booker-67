@@ -304,21 +304,19 @@ export default function Booking() {
     setIsSubmitting(true);
     
     try {
-      // Safely create date object for slot time
+      // Format the date and time properly for the database
+      // This is for timestamp without timezone format
       let slotDateTime;
       try {
-        // Construct a valid ISO datetime string
-        const dateTimeStr = `${slot.date}T${slot.start_time}`;
-        slotDateTime = new Date(dateTimeStr);
-        
-        // Check if the date is valid
-        if (isNaN(slotDateTime.getTime())) {
-          throw new Error("Invalid date/time value");
-        }
+        // Properly format the date and time for a timestamp without timezone
+        // Format should be: YYYY-MM-DD HH:MM:SS
+        const dateStr = slot.date; // Should be in format YYYY-MM-DD
+        const timeStr = slot.start_time; // Should be in format HH:MM:SS
+        slotDateTime = `${dateStr} ${timeStr}`;
       } catch (dateError) {
         console.error("Date construction error:", dateError);
-        // Fallback: use current time as a last resort
-        slotDateTime = new Date();
+        // Fallback to current time as a last resort
+        slotDateTime = format(new Date(), 'yyyy-MM-dd HH:mm:ss');
       }
       
       const booking = {
@@ -326,11 +324,14 @@ export default function Booking() {
         venue_id: venue.id,
         sport_id: sport.id,
         slot_id: slot.id.startsWith('temp-') ? null : slot.id,
-        slot_time: slotDateTime.toISOString(),
+        slot_time: slotDateTime,
         status: 'confirmed',
         full_name: name,
-        phone: phone
+        phone: phone,
+        amount: slot.price || 0
       };
+      
+      console.log("Creating booking with data:", booking);
       
       const { data, error } = await supabase
         .from('bookings')
@@ -343,6 +344,8 @@ export default function Booking() {
         toast.error("Failed to save booking: " + error.message);
         return;
       }
+      
+      console.log("Booking created successfully:", data);
       
       // If this is a real slot (not temporary), update its availability
       if (!slot.id.startsWith('temp-')) {
