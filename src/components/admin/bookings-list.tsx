@@ -4,7 +4,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Booking } from "@/types/booking";
 import { toast } from "@/components/ui/sonner";
@@ -136,34 +136,44 @@ export function BookingsList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredBookings.map((booking) => (
-              <TableRow key={booking.id}>
-                <TableCell className="font-medium">
-                  {booking.full_name}
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <div className="font-medium">{booking.venues?.name}</div>
-                    <div className="text-sm text-gray-500">{booking.sports?.name}</div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {format(new Date(booking.slot_time), "PPp")}
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant={
-                      booking.status === 'confirmed' ? 'default' :
-                      booking.status === 'cancelled' ? 'destructive' :
-                      'secondary'
-                    }
-                  >
-                    {booking.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>{booking.phone}</TableCell>
-              </TableRow>
-            ))}
+            {filteredBookings.map((booking) => {
+              // Safely format the date
+              let formattedDateTime = 'Invalid date';
+              try {
+                formattedDateTime = format(parseISO(booking.slot_time), "PPp");
+              } catch (error) {
+                console.error("Date formatting error:", error, booking.slot_time);
+              }
+              
+              return (
+                <TableRow key={booking.id}>
+                  <TableCell className="font-medium">
+                    {booking.full_name}
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{booking.venues?.name}</div>
+                      <div className="text-sm text-gray-500">{booking.sports?.name}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {formattedDateTime}
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={
+                        booking.status === 'confirmed' ? 'default' :
+                        booking.status === 'cancelled' ? 'destructive' :
+                        'secondary'
+                      }
+                    >
+                      {booking.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{booking.phone}</TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

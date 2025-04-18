@@ -45,8 +45,56 @@ export function SlotCard({ slot, className }: SlotCardProps) {
         if (sportError) throw sportError;
         setSport(sportData);
         
+        // For temporary slots, check if there are any bookings for this slot time/venue/sport
+        if (slot.id.startsWith('temp-')) {
+          const { data: existingBookings, error: bookingsError } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('venue_id', slot.venue_id)
+            .eq('sport_id', slot.sport_id)
+            .eq('slot_time', `${slot.date}T${slot.start_time}`);
+          
+          if (bookingsError) throw bookingsError;
+          
+          if (existingBookings && existingBookings.length > 0) {
+            setIsBooked(true);
+          }
+        }
+        
         // Subscribe to booking changes for this slot
-        const channel = supabase
+        const bookingChannel = supabase
+          .channel('booking-updates')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'bookings'
+            },
+            (payload: any) => {
+              // Check if this booking matches our slot
+              if (payload.new && 
+                  payload.new.venue_id === slot.venue_id && 
+                  payload.new.sport_id === slot.sport_id) {
+                  
+                // For temp slots, check if the slot time matches
+                if (slot.id.startsWith('temp-')) {
+                  const slotDateTime = `${slot.date}T${slot.start_time}`;
+                  if (payload.new.slot_time === slotDateTime) {
+                    setIsBooked(true);
+                  }
+                } 
+                // For regular slots, check the slot_id
+                else if (payload.new.slot_id === slot.id) {
+                  setIsBooked(true);
+                }
+              }
+            }
+          )
+          .subscribe();
+          
+        // Subscribe to slot changes for regular slots
+        const slotChannel = supabase
           .channel('slot-updates')
           .on(
             'postgres_changes',
@@ -57,13 +105,16 @@ export function SlotCard({ slot, className }: SlotCardProps) {
               filter: `id=eq.${slot.id}`
             },
             (payload: any) => {
-              setIsBooked(!payload.new.available);
+              if (!slot.id.startsWith('temp-')) {
+                setIsBooked(!payload.new.available);
+              }
             }
           )
           .subscribe();
 
         return () => {
-          supabase.removeChannel(channel);
+          supabase.removeChannel(bookingChannel);
+          supabase.removeChannel(slotChannel);
         };
       } catch (error) {
         console.error("Error fetching slot details:", error);
@@ -74,7 +125,7 @@ export function SlotCard({ slot, className }: SlotCardProps) {
     };
     
     fetchDetails();
-  }, [slot.venue_id, slot.sport_id, slot.id]);
+  }, [slot.venue_id, slot.sport_id, slot.id, slot.date, slot.start_time]);
   
   if (isLoading) {
     return (

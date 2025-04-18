@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { format, parse } from "date-fns";
+import { format, parse, parseISO } from "date-fns";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ export default function Booking() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSlotBooked, setIsSlotBooked] = useState(false);
   
   useEffect(() => {
     if (!user) {
@@ -123,6 +124,22 @@ export default function Booking() {
           
           if (sportError) throw sportError;
           
+          // Check if this slot is already booked
+          const slotDateTime = `${date}T${time}`;
+          const { data: existingBookings, error: bookingsError } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('venue_id', venueId)
+            .eq('sport_id', sportId)
+            .eq('slot_time', slotDateTime);
+          
+          if (bookingsError) throw bookingsError;
+          
+          if (existingBookings && existingBookings.length > 0) {
+            setIsSlotBooked(true);
+            toast.error("This slot has already been booked");
+          }
+          
           // Create slot object from temp ID
           // Safely calculate end time
           let endTime;
@@ -150,7 +167,7 @@ export default function Booking() {
             start_time: time,
             end_time: endTime,
             price: 0, // Will be determined later
-            available: true,
+            available: !isSlotBooked,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
@@ -235,6 +252,7 @@ export default function Booking() {
           }
           
           if (!slotData.available) {
+            setIsSlotBooked(true);
             toast.error("This slot is not available for booking");
             navigate("/slots");
             return;
@@ -262,6 +280,41 @@ export default function Booking() {
           if (sportError) throw sportError;
           setSport(sportData);
         }
+        
+        // Subscribe to booking changes
+        const channel = supabase
+          .channel('booking-slot-updates')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'bookings',
+            },
+            (payload: any) => {
+              // If this is a temp slot, check if the slot time matches
+              if (slot?.id.startsWith('temp-') && 
+                  payload.new.venue_id === slot.venue_id && 
+                  payload.new.sport_id === slot.sport_id) {
+                  
+                const slotDateTime = `${slot.date}T${slot.start_time}`;
+                if (payload.new.slot_time === slotDateTime) {
+                  setIsSlotBooked(true);
+                  toast.error("This slot was just booked by someone else");
+                }
+              } 
+              // For regular slots, check the slot_id
+              else if (payload.new.slot_id === slotId) {
+                setIsSlotBooked(true);
+                toast.error("This slot was just booked by someone else");
+              }
+            }
+          )
+          .subscribe();
+        
+        return () => {
+          supabase.removeChannel(channel);
+        };
       } catch (error: any) {
         console.error("Error fetching slot:", error);
         setError(error.message || "Failed to load booking details");
@@ -291,6 +344,11 @@ export default function Booking() {
       return;
     }
     
+    if (isSlotBooked) {
+      toast.error("This slot has already been booked");
+      return;
+    }
+    
     if (!name.trim() || !phone.trim()) {
       toast.error("Please fill in all required fields");
       return;
@@ -304,6 +362,41 @@ export default function Booking() {
     setIsSubmitting(true);
     
     try {
+      // Check once more if the slot is available (race condition protection)
+      if (slot.id.startsWith('temp-')) {
+        // For temp slots, check if there are any bookings for this slot time/venue/sport
+        const slotDateTime = `${slot.date}T${slot.start_time}`;
+        const { data: existingBookings, error: bookingsCheckError } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('venue_id', slot.venue_id)
+          .eq('sport_id', slot.sport_id)
+          .eq('slot_time', slotDateTime);
+        
+        if (bookingsCheckError) throw bookingsCheckError;
+        
+        if (existingBookings && existingBookings.length > 0) {
+          setIsSlotBooked(true);
+          toast.error("This slot was just booked by someone else");
+          return;
+        }
+      } else {
+        // For regular slots, check if the slot is still available
+        const { data: slotData, error: slotCheckError } = await supabase
+          .from('slots')
+          .select('available')
+          .eq('id', slot.id)
+          .single();
+        
+        if (slotCheckError) throw slotCheckError;
+        
+        if (!slotData.available) {
+          setIsSlotBooked(true);
+          toast.error("This slot is no longer available");
+          return;
+        }
+      }
+      
       // Safely create date object for slot time
       let slotDateTime;
       try {
@@ -329,7 +422,8 @@ export default function Booking() {
         slot_time: slotDateTime.toISOString(),
         status: 'confirmed',
         full_name: name,
-        phone: phone
+        phone: phone,
+        amount: slot.price // Include the amount from the slot price
       };
       
       const { data, error } = await supabase
@@ -497,9 +591,9 @@ export default function Booking() {
               <Button 
                 type="submit" 
                 className="w-full md:w-auto"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isSlotBooked}
               >
-                {isSubmitting ? "Processing..." : "Confirm Booking"}
+                {isSubmitting ? "Processing..." : isSlotBooked ? "Already Booked" : "Confirm Booking"}
               </Button>
             </CardFooter>
           </form>

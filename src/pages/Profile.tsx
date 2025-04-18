@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -179,34 +179,49 @@ export default function Profile() {
               </div>
             ) : (
               <div className="space-y-4">
-                {bookings.map((booking) => (
-                  <Card key={booking.id} className="bg-gray-50">
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="font-semibold text-lg mb-1">
-                            {booking.sports?.name} at {booking.venues?.name}
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            {format(new Date(booking.slot_time), 'EEEE, MMMM d, yyyy')}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {format(new Date(booking.slot_time), 'h:mm a')}
-                          </p>
+                {bookings.map((booking) => {
+                  // Safely parse the date with error handling
+                  let formattedDate = '';
+                  let formattedTime = '';
+                  try {
+                    const date = parseISO(booking.slot_time);
+                    formattedDate = format(date, 'EEEE, MMMM d, yyyy');
+                    formattedTime = format(date, 'h:mm a');
+                  } catch (error) {
+                    console.error("Date parsing error:", error, booking.slot_time);
+                    formattedDate = 'Invalid date';
+                    formattedTime = '';
+                  }
+                  
+                  return (
+                    <Card key={booking.id} className="bg-gray-50">
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="font-semibold text-lg mb-1">
+                              {booking.sports?.name} at {booking.venues?.name}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              {formattedDate}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {formattedTime}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge 
+                              variant={booking.status === 'confirmed' ? 'default' : 'secondary'}
+                              className="mb-2"
+                            >
+                              {booking.status}
+                            </Badge>
+                            <p className="font-medium">₹{booking.amount}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <Badge 
-                            variant={booking.status === 'confirmed' ? 'default' : 'secondary'}
-                            className="mb-2"
-                          >
-                            {booking.status}
-                          </Badge>
-                          <p className="font-medium">₹{booking.amount}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </CardContent>
