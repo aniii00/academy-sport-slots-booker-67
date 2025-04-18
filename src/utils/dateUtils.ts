@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO, isValid } from "date-fns";
+import { format, parseISO, isValid, parse } from "date-fns";
 
 /**
  * Safely formats a date string in ISO format
@@ -14,6 +14,7 @@ export function formatDateTimeToISO(date: string, time: string): string | null {
     let dateStr = date?.trim() || '';
     if (!dateStr) return null;
 
+    // Process different date formats
     if (!dateStr.includes('-')) {
       // Format YYYYMMDD to YYYY-MM-DD
       if (dateStr.length === 8) {
@@ -24,12 +25,28 @@ export function formatDateTimeToISO(date: string, time: string): string | null {
       }
     }
     
-    // Validate date format
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(dateStr)) {
-      console.error("Date doesn't match expected format (YYYY-MM-DD):", dateStr);
+    // Split the date parts and validate each part
+    const dateParts = dateStr.split('-');
+    if (dateParts.length !== 3) {
+      console.error("Date doesn't have three parts separated by dashes:", dateStr);
       return null;
     }
+    
+    const year = parseInt(dateParts[0], 10);
+    const month = parseInt(dateParts[1], 10);
+    const day = parseInt(dateParts[2], 10);
+    
+    // Basic validation
+    if (isNaN(year) || isNaN(month) || isNaN(day) || 
+        year < 2000 || year > 2100 || 
+        month < 1 || month > 12 || 
+        day < 1 || day > 31) {
+      console.error("Date parts are invalid:", year, month, day);
+      return null;
+    }
+    
+    // Reconstruct the validated date
+    dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     
     // Clean and normalize time
     let timeStr = time?.trim() || '';
@@ -52,19 +69,35 @@ export function formatDateTimeToISO(date: string, time: string): string | null {
       timeStr = `${timeStr}:00`;
     }
     
-    // Validate time format
-    const timeRegex = /^\d{2}:\d{2}:\d{2}$/;
-    if (!timeRegex.test(timeStr)) {
-      console.error("Time doesn't match expected format (HH:MM:SS):", timeStr);
+    // Split the time parts and validate each part
+    const timeParts = timeStr.split(':');
+    if (timeParts.length !== 3) {
+      console.error("Time doesn't have three parts separated by colons:", timeStr);
       return null;
     }
+    
+    const hours = parseInt(timeParts[0], 10);
+    const minutes = parseInt(timeParts[1], 10);
+    const seconds = parseInt(timeParts[2], 10);
+    
+    // Basic validation
+    if (isNaN(hours) || isNaN(minutes) || isNaN(seconds) || 
+        hours < 0 || hours > 23 || 
+        minutes < 0 || minutes > 59 || 
+        seconds < 0 || seconds > 59) {
+      console.error("Time parts are invalid:", hours, minutes, seconds);
+      return null;
+    }
+    
+    // Reconstruct the validated time
+    timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
     // Combine date and time
     const isoString = `${dateStr}T${timeStr}`;
     
-    // Validate the result is a valid date
+    // Final validation using Date object
     const testDate = new Date(isoString);
-    if (!isValid(testDate)) {
+    if (isNaN(testDate.getTime())) {
       console.error("Invalid date/time combination:", isoString);
       return null;
     }
@@ -72,6 +105,48 @@ export function formatDateTimeToISO(date: string, time: string): string | null {
     return isoString;
   } catch (error) {
     console.error("Error formatting date/time:", error);
+    return null;
+  }
+}
+
+/**
+ * Validates and formats a slot date and time for display or storage
+ * @param slotDate The date string (YYYY-MM-DD or YYYYMMDD)
+ * @param slotTime The time string (HH:MM:SS, HH:MM, or HHMM)
+ * @returns A properly formatted ISO date-time string or null if invalid
+ */
+export function formatSlotDateTime(slotDate: string, slotTime: string): string | null {
+  try {
+    // Ensure date is in YYYY-MM-DD format
+    let formattedDate = slotDate;
+    if (!slotDate.includes('-') && slotDate.length === 8) {
+      formattedDate = `${slotDate.substring(0, 4)}-${slotDate.substring(4, 6)}-${slotDate.substring(6, 8)}`;
+    }
+    
+    // Ensure time is in HH:MM:SS format
+    let formattedTime = slotTime;
+    if (!slotTime.includes(':')) {
+      if (slotTime.length === 4) {
+        formattedTime = `${slotTime.substring(0, 2)}:${slotTime.substring(2, 4)}:00`;
+      } else if (slotTime.length === 6) {
+        formattedTime = `${slotTime.substring(0, 2)}:${slotTime.substring(2, 4)}:${slotTime.substring(4, 6)}`;
+      }
+    } else if (slotTime.split(':').length === 2) {
+      formattedTime = `${slotTime}:00`;
+    }
+    
+    // Create the ISO string
+    const isoString = `${formattedDate}T${formattedTime}`;
+    
+    // Validate it
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+    
+    return isoString;
+  } catch (error) {
+    console.error("Error formatting slot date time:", error);
     return null;
   }
 }

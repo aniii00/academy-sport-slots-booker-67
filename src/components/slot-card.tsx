@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,11 +6,10 @@ import { Link } from "react-router-dom";
 import { Slot, Venue, Sport } from "@/types/venue";
 import { TimeIcon, PriceIcon } from "@/utils/iconMapping";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDateForDisplay } from "@/utils/dateUtils";
-import { parseISO, isValid } from "date-fns";
+import { formatDateForDisplay, formatSlotDateTime } from "@/utils/dateUtils";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/sonner";
-import { Badge } from "@/components/ui/badge";
 
 interface SlotCardProps {
   slot: Slot;
@@ -45,19 +45,11 @@ export function SlotCard({ slot, className }: SlotCardProps) {
         
         if (slot.id.startsWith('temp-')) {
           try {
-            const dateStr = slot.date.includes('-') 
-              ? slot.date 
-              : `${slot.date.substring(0, 4)}-${slot.date.substring(4, 6)}-${slot.date.substring(6, 8)}`;
-              
-            const timeStr = slot.start_time.includes(':') 
-              ? slot.start_time 
-              : `${slot.start_time.substring(0, 2)}:${slot.start_time.substring(2, 4)}:${slot.start_time.length > 4 ? slot.start_time.substring(4, 6) : '00'}`;
-              
-            const slotDateTime = `${dateStr}T${timeStr}`;
+            // Format the date and time properly
+            const slotDateTime = formatSlotDateTime(slot.date, slot.start_time);
             
-            const testDate = new Date(slotDateTime);
-            if (!isValid(testDate)) {
-              throw new Error("Invalid date format");
+            if (!slotDateTime) {
+              throw new Error("Invalid date/time format");
             }
             
             const { data: existingBookings, error: bookingsError } = await supabase
@@ -93,17 +85,9 @@ export function SlotCard({ slot, className }: SlotCardProps) {
                   
                 if (slot.id.startsWith('temp-')) {
                   try {
-                    const dateStr = slot.date.includes('-') 
-                      ? slot.date 
-                      : `${slot.date.substring(0, 4)}-${slot.date.substring(4, 6)}-${slot.date.substring(6, 8)}`;
-                      
-                    const timeStr = slot.start_time.includes(':') 
-                      ? slot.start_time 
-                      : `${slot.start_time.substring(0, 2)}:${slot.start_time.substring(2, 4)}:${slot.start_time.length > 4 ? slot.start_time.substring(4, 6) : '00'}`;
-                      
-                    const slotDateTime = `${dateStr}T${timeStr}`;
+                    const slotDateTime = formatSlotDateTime(slot.date, slot.start_time);
                     
-                    if (payload.new.slot_time === slotDateTime) {
+                    if (slotDateTime && payload.new.slot_time === slotDateTime) {
                       setIsBooked(true);
                     }
                   } catch (error) {
@@ -166,23 +150,15 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   
   if (!venue || !sport) return null;
   
-  let formattedDate;
+  // Format the date for display with error handling
+  let formattedDate = "Invalid date";
   try {
-    const dateStr = slot.date.includes('-') 
-      ? slot.date 
-      : `${slot.date.substring(0, 4)}-${slot.date.substring(4, 6)}-${slot.date.substring(6, 8)}`;
-    
-    const isoDateStr = `${dateStr}T00:00:00Z`;
-    const dateObj = parseISO(isoDateStr);
-    
-    if (!isValid(dateObj)) {
-      throw new Error("Invalid date");
+    const isoDateStr = formatSlotDateTime(slot.date, "00:00:00");
+    if (isoDateStr) {
+      formattedDate = formatDateForDisplay(isoDateStr, "EEE, dd MMM yyyy");
     }
-    
-    formattedDate = formatDateForDisplay(isoDateStr, "EEE, dd MMM yyyy");
   } catch (error) {
     console.error("Date formatting error:", error, slot.date);
-    formattedDate = "Invalid date";
   }
 
   const slotId = encodeURIComponent(slot.id);
