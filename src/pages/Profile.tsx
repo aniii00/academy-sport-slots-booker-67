@@ -135,7 +135,6 @@ export default function Profile() {
       return "Date format error";
     }
   };
-  
   const formatBookingTime = (dateTimeStr: string) => {
     try {
       if (!dateTimeStr) return "Invalid time";

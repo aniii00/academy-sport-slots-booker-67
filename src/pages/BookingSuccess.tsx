@@ -32,7 +32,7 @@ export default function BookingSuccess() {
           </Button>
         </Link>
         
-        <Link to="/centers">
+        <Link to="/venue">
           <Button variant="outline" className="w-full">
             Book Another Slot
           </Button>
