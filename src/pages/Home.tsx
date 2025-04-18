@@ -52,7 +52,6 @@ export default function Home() {
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/4d41bb1318a39d2fde8d260ba6876350.jpg",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/5f51a1cee2aa31d69aad953432b9f088.jpg",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/9e730ba6b383eafb35b15c2524847618.jpg",
-      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/2025-04-18%2016.33.39.jpg"
     ]);
 
     fetchData();
