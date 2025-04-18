@@ -52,22 +52,31 @@ export default function Home() {
     <div className="space-y-12 pb-8">
       <SportBackground>
         <section className="py-24 px-4 md:px-8 rounded-3xl bg-gradient-to-r from-sports-blue to-sports-blue/80 text-white shadow-lg transition-all hover:shadow-xl">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-6xl font-extrabold mb-6 animate-fade-in leading-tight tracking-tight uppercase">
-              Book Your Turf. Rule Your Game.
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 text-white/90 leading-relaxed italic">
-              Access elite sports venues across Delhi — train smart, play hard, and stay ahead.
-            </p>
-            <Link to="/venue">
-              <Button 
-                size="lg" 
-                className="rounded-full px-8 py-6 text-lg bg-white text-sports-blue hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              >
-                Book Now
-                <ArrowRightIcon className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
+            <div className="text-center md:text-left md:max-w-2xl">
+              <h1 className="text-5xl md:text-6xl font-extrabold mb-6 animate-fade-in leading-tight tracking-tight uppercase">
+                Book Your Turf. Rule Your Game.
+              </h1>
+              <p className="text-xl md:text-2xl mb-8 text-white/90 leading-relaxed italic">
+                Access elite sports venues across Delhi — train smart, play hard, and stay ahead.
+              </p>
+              <Link to="/venue">
+                <Button 
+                  size="lg" 
+                  className="rounded-full px-8 py-6 text-lg bg-white text-sports-blue hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                  Book Now
+                  <ArrowRightIcon className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+            <div className="hidden md:block">
+              <img 
+                src="https://images.unsplash.com/photo-1613358632412-df6b96e1c0fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                alt="sports action" 
+                className="rounded-3xl shadow-lg w-[400px] h-auto object-cover"
+              />
+            </div>
           </div>
         </section>
       </SportBackground>
