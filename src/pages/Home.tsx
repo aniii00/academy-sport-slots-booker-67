@@ -54,10 +54,10 @@ export default function Home() {
         <section className="py-24 px-4 md:px-8 rounded-3xl bg-gradient-to-r from-sports-blue to-sports-blue/80 text-white shadow-lg transition-all hover:shadow-xl">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-6xl font-bold mb-6 animate-fade-in leading-tight">
-              Book Your Perfect Sports Venue
+              Find Your Game. Own the Moment.
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90 leading-relaxed">
-              Access premium sports facilities across Delhi. Professional coaching and world-class amenities.
+              Book premium sports venues in Delhi — pro coaching, elite vibes, no hassle.
             </p>
             <Link to="/venue">
               <Button 
