@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserIcon, LogOutIcon, RefreshCwIcon, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge"; // Import Badge component
+import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
 import { format } from "date-fns";
 
@@ -64,7 +64,7 @@ export default function Profile() {
       console.log("Bookings fetched:", data);
       
       // Transform the data to include amount (default to 0 if not present)
-      const bookingsWithAmount = data?.map(booking => ({
+      const bookingsWithAmount = (data as any[])?.map(booking => ({
         ...booking,
         amount: booking.amount || 0
       })) || [];

@@ -30,7 +30,7 @@ export function BookingsList() {
         if (error) throw error;
         
         // Transform the data to include amount (default to 0 if not present)
-        const bookingsWithAmount = data?.map(booking => ({
+        const bookingsWithAmount = (data as any[])?.map(booking => ({
           ...booking,
           amount: booking.amount || 0
         })) || [];
