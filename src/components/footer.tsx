@@ -3,7 +3,7 @@ import { FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
 
 export function Footer() {
   return (
-    <footer className="relative bg-cover bg-center" style={{ backgroundImage: "url('https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/47440edcda1755338e49b4c001259df8.jpg')" }}>
+    <footer className="relative bg-cover bg-center" style={{ backgroundImage: "url('/https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/47440edcda1755338e49b4c001259df8.jpg')" }}>
       <div className="backdrop-blur-md bg-black/60 rounded-2xl mx-4 my-8 p-6 md:p-12 text-white shadow-lg max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div>
