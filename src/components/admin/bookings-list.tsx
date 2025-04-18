@@ -4,7 +4,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Booking } from "@/types/booking";
 import { toast } from "@/components/ui/sonner";
@@ -30,7 +30,7 @@ export function BookingsList() {
         if (error) throw error;
         
         // Transform the data to include amount (default to 0 if not present)
-        const bookingsWithAmount = (data as Booking[]).map(booking => ({
+        const bookingsWithAmount = (data as any[]).map(booking => ({
           ...booking,
           amount: booking.amount || 0
         }));
@@ -136,16 +136,28 @@ export function BookingsList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredBookings.map((booking) => {
+            {bookings.filter(booking => {
+              const matchesSearch = 
+                (booking.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+                (booking.phone?.includes(searchTerm) || false) ||
+                (booking.venues?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+                (booking.sports?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
+                
+              const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
+              
+              return matchesSearch && matchesStatus;
+            }).map((booking) => {
               // Safely format the date
               let formattedDateTime = 'Invalid date';
               try {
-                // Validate the date string first
-                const date = new Date(booking.slot_time);
-                if (!isNaN(date.getTime())) {
-                  formattedDateTime = format(date, "PPp");
-                } else {
-                  console.error("Invalid date format:", booking.slot_time);
+                if (booking.slot_time) {
+                  // Ensure valid date format
+                  const date = new Date(booking.slot_time);
+                  if (!isNaN(date.getTime())) {
+                    formattedDateTime = format(date, "PPp");
+                  } else {
+                    console.error("Invalid date format:", booking.slot_time);
+                  }
                 }
               } catch (error) {
                 console.error("Date formatting error:", error, booking.slot_time);
