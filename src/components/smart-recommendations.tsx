@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPinIcon, ClockIcon, StarIcon } from "lucide-react";
 import { centers, sports, generateTimeSlots, Center, Sport, TimeSlot } from "@/data/mockData";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Mock user preferences (in a real app, this would come from user profile/database)
 const mockUserPreferences = {
@@ -14,10 +14,11 @@ const mockUserPreferences = {
 };
 
 export function SmartRecommendations() {
+  const { user } = useAuth();
   const [locationBasedCenters, setLocationBasedCenters] = useState<Center[]>([]);
   const [favoriteSlots, setFavoriteSlots] = useState<TimeSlot[]>([]);
   const [previousCenters, setPreviousCenters] = useState<Center[]>([]);
-  
+
   useEffect(() => {
     // Get centers based on user's location
     const centersInLocation = centers.filter(center => 
@@ -43,6 +44,9 @@ export function SmartRecommendations() {
   // Get sport object for favorite sport
   const favoriteSport = sports.find(sport => sport.id === mockUserPreferences.favoriteSportId);
   
+  // Only render if user is signed in
+  if (!user) return null;
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Smart Recommendations</h2>
