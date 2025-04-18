@@ -26,15 +26,15 @@ export default function Home() {
           .from('venues')
           .select('*')
           .limit(4);
-        
+
         if (venueError) throw venueError;
-        
+
         const { data: sportData, error: sportError } = await supabase
           .from('sports')
           .select('*');
-        
+
         if (sportError) throw sportError;
-        
+
         setVenues(venueData || []);
         setSports(sportData || []);
       } catch (error) {
@@ -44,7 +44,7 @@ export default function Home() {
         setIsLoading(false);
       }
     };
-    
+
     fetchData();
   }, []);
 
@@ -53,11 +53,11 @@ export default function Home() {
       <SportBackground>
         <section className="py-24 px-4 md:px-8 rounded-3xl bg-gradient-to-r from-sports-blue to-sports-blue/80 text-white shadow-lg transition-all hover:shadow-xl">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 animate-fade-in leading-tight">
-              Find Your Game. Own the Moment.
+            <h1 className="text-5xl md:text-6xl font-extrabold mb-6 animate-fade-in leading-tight tracking-tight uppercase">
+              Book Your Turf. Rule Your Game.
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-white/90 leading-relaxed">
-              Book premium sports venues in Delhi — pro coaching, elite vibes, no hassle.
+            <p className="text-xl md:text-2xl mb-8 text-white/90 leading-relaxed italic">
+              Access elite sports venues across Delhi — train smart, play hard, and stay ahead.
             </p>
             <Link to="/venue">
               <Button 
@@ -82,7 +82,7 @@ export default function Home() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold text-sports-orange mb-2">Popular Sports</h2>
-            <p className="text-gray-600">Choose from our wide range of sports activities</p>
+            <p className="text-gray-600">Choose your game and own your grind</p>
           </div>
           <Link to="/venue">
             <Button 
@@ -113,7 +113,7 @@ export default function Home() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold mb-2">Featured Venues</h2>
-            <p className="text-gray-600">Discover our top-rated sports facilities</p>
+            <p className="text-gray-600">Train where the top players train</p>
           </div>
           <Link to="/venue">
             <Button 
@@ -128,7 +128,7 @@ export default function Home() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-64 bg-gray-200 animate-pulse rounded-2xl"></div>
+              <div key={i} className="h-64 bg-gray-200 animate-pulse rounded-2l"></div>
             ))}
           </div>
         ) : (
@@ -148,3 +148,4 @@ export default function Home() {
     </div>
   );
 }
+
