@@ -9,8 +9,8 @@ export function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4">Prashant Academy</h3>
             <p className="text-gray-600 mb-4">
-              Premium sports facilities across multiple centers in India.
-              Book your slot today and experience world-class training.
+              Train like a beast, book like a breeze.
+              India’s dopest sports zones are just a tap away — grab your slot and let the grind begin. 🏸🔥
             </p>
           </div>
           
