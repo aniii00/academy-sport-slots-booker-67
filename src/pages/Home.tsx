@@ -18,6 +18,8 @@ export default function Home() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [sports, setSports] = useState<Sport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,8 +47,23 @@ export default function Home() {
       }
     };
 
+    // Set the image URLs
+    setImageUrls([
+      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/4d41bb1318a39d2fde8d260ba6876350.jpg",
+      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/5f51a1cee2aa31d69aad953432b9f088.jpg",
+      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/9e730ba6b383eafb35b15c2524847618.jpg",
+      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/6981d74e2d19d121230385a62616534c.jpg"
+    ]);
+
     fetchData();
-  }, []);
+
+    // Change the image every 5 seconds
+    const intervalId = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % imageUrls.length); // Cycle through images
+    }, 5000);
+
+    return () => clearInterval(intervalId); // Cleanup on component unmount
+  }, [imageUrls.length]);
 
   return (
     <div className="space-y-12 pb-8">
@@ -72,7 +89,7 @@ export default function Home() {
             </div>
             <div className="hidden md:block">
               <img 
-                src="https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/98c979d2b6481f1f36fc526e53d10a97.jpg"
+                src={imageUrls[currentImageIndex]}  // Dynamically changing image
                 alt="sports action" 
                 className="rounded-3xl shadow-lg w-[400px] h-auto object-cover"
               />
