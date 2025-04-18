@@ -138,6 +138,32 @@ export default function Slots() {
         } else {
           console.log("No existing slots found, generating new ones");
           
+          // Check venue timings - create default ones if none exist
+          const { data: timingsData, error: timingsError } = await supabase
+            .from('venue_timings')
+            .select('*')
+            .eq('venue_id', selectedVenue.id);
+          
+          if (timingsError) throw timingsError;
+          
+          if (!timingsData || timingsData.length === 0) {
+            console.log("No venue timings found, creating default ones");
+            await createDefaultVenueTimings(selectedVenue.id);
+          }
+          
+          // Check venue pricing - create default ones if none exist
+          const { data: pricingData, error: pricingError } = await supabase
+            .from('venue_pricing')
+            .select('*')
+            .eq('venue_id', selectedVenue.id);
+          
+          if (pricingError) throw pricingError;
+          
+          if (!pricingData || pricingData.length === 0) {
+            console.log("No venue pricing found, creating default ones");
+            await createDefaultVenuePricing(selectedVenue.id);
+          }
+          
           // Generate slots for this venue, sport, and date
           const generatedSlots = await generateSlotsForVenueAndDate(
             selectedVenue.id, 
@@ -159,6 +185,101 @@ export default function Slots() {
     
     fetchSlots();
   }, [selectedVenue, selectedSport, date]);
+  
+  // Function to create default venue timings
+  const createDefaultVenueTimings = async (venueId: string) => {
+    try {
+      const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      const timingsToInsert = [];
+      
+      for (const day of daysOfWeek) {
+        // Morning timing (6 AM to 12 PM)
+        timingsToInsert.push({
+          venue_id: venueId,
+          day_of_week: day,
+          start_time: '06:00:00',
+          end_time: '12:00:00',
+          is_morning: true
+        });
+        
+        // Evening timing (12 PM to 11 PM)
+        timingsToInsert.push({
+          venue_id: venueId,
+          day_of_week: day,
+          start_time: '12:00:00',
+          end_time: '23:00:00',
+          is_morning: false
+        });
+      }
+      
+      const { error } = await supabase
+        .from('venue_timings')
+        .insert(timingsToInsert);
+      
+      if (error) throw error;
+      
+      console.log("Created default venue timings");
+      
+    } catch (error) {
+      console.error("Error creating default venue timings:", error);
+      toast.error("Failed to create default venue timings");
+    }
+  };
+  
+  // Function to create default venue pricing
+  const createDefaultVenuePricing = async (venueId: string) => {
+    try {
+      const pricingToInsert = [
+        // Weekday pricing (Monday-Thursday)
+        {
+          venue_id: venueId,
+          day_group: 'monday-thursday',
+          is_morning: true,
+          time_range: '6-12',
+          price: 500,
+          per_duration: '30 minutes'
+        },
+        {
+          venue_id: venueId,
+          day_group: 'monday-thursday',
+          is_morning: false,
+          time_range: '12-23',
+          price: 700,
+          per_duration: '30 minutes'
+        },
+        
+        // Weekend pricing (Friday-Sunday)
+        {
+          venue_id: venueId,
+          day_group: 'friday-sunday',
+          is_morning: true,
+          time_range: '6-12',
+          price: 700,
+          per_duration: '30 minutes'
+        },
+        {
+          venue_id: venueId,
+          day_group: 'friday-sunday',
+          is_morning: false,
+          time_range: '12-23',
+          price: 900,
+          per_duration: '30 minutes'
+        }
+      ];
+      
+      const { error } = await supabase
+        .from('venue_pricing')
+        .insert(pricingToInsert);
+      
+      if (error) throw error;
+      
+      console.log("Created default venue pricing");
+      
+    } catch (error) {
+      console.error("Error creating default venue pricing:", error);
+      toast.error("Failed to create default venue pricing");
+    }
+  };
   
   const generateSlotsForVenueAndDate = async (
     venueId: string, 
@@ -260,25 +381,7 @@ export default function Slots() {
         toast.error("Failed to save some slots");
       }
       
-      // If we have inserted slots, return them
-      if (insertedSlots.length > 0) {
-        return insertedSlots;
-      }
-      
-      // If insertion failed but we generated slots, fetch what was inserted
-      const { data: fetchedSlots, error: fetchError } = await supabase
-        .from('slots')
-        .select('*')
-        .eq('venue_id', venueId)
-        .eq('sport_id', sportId)
-        .eq('date', formattedDate);
-      
-      if (fetchError) {
-        throw fetchError;
-      }
-      
-      return fetchedSlots || [];
-      
+      return insertedSlots;
     } catch (error) {
       console.error("Error generating slots:", error);
       toast.error("Failed to generate slots for this date");
