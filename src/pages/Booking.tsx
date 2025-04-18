@@ -53,7 +53,6 @@ export default function Booking() {
         setError(null);
         console.log("Fetching slot with ID:", slotId);
         
-        // Fetch the slot from the database
         const { data: slotData, error: slotError } = await supabase
           .from('slots')
           .select('*')
@@ -73,7 +72,6 @@ export default function Booking() {
         
         setSlot(slotData);
         
-        // Get venue info
         const { data: venueData, error: venueError } = await supabase
           .from('venues')
           .select('*')
@@ -83,7 +81,6 @@ export default function Booking() {
         if (venueError) throw venueError;
         setVenue(venueData);
         
-        // Get sport info
         const { data: sportData, error: sportError } = await supabase
           .from('sports')
           .select('*')
@@ -134,19 +131,15 @@ export default function Booking() {
     setIsSubmitting(true);
     
     try {
-      // Format the date and time correctly for database storage (YYYY-MM-DD HH:MM:SS)
       let slotDateTime;
       
       try {
-        // Make sure we have a valid date and time
         if (!slot.date || !slot.start_time) {
           throw new Error("Missing date or time information");
         }
         
-        // Ensure proper date format for database (YYYY-MM-DD)
         let formattedDate = slot.date;
         if (!/^\d{4}-\d{2}-\d{2}$/.test(slot.date)) {
-          // If date is not already in YYYY-MM-DD format, try to parse and reformat it
           const parsedDate = new Date(slot.date);
           if (!isNaN(parsedDate.getTime())) {
             formattedDate = format(parsedDate, 'yyyy-MM-dd');
@@ -155,10 +148,8 @@ export default function Booking() {
           }
         }
         
-        // Combine date and time into proper format for database
         slotDateTime = `${formattedDate} ${slot.start_time}`;
         
-        // Validate final format
         if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(slotDateTime)) {
           throw new Error(`Invalid date/time format: ${slotDateTime}`);
         }
@@ -194,7 +185,6 @@ export default function Booking() {
       if (error) {
         console.error("Booking error:", error);
         
-        // Check if it's a date/time format error
         if (error.message.includes("date/time") || error.message.includes("out of range")) {
           toast.error("Failed to save booking: Invalid date/time format. Please try a different slot.");
         } else {
@@ -205,7 +195,6 @@ export default function Booking() {
       
       console.log("Booking created successfully:", data);
       
-      // Update slot availability
       await supabase
         .from('slots')
         .update({ available: false })
@@ -251,29 +240,24 @@ export default function Booking() {
     );
   }
   
-  // Format date for display with proper error handling
   let formattedDate = "Invalid date";
   try {
-    // Make sure we handle any date format properly
     let dateObj;
     
-    // First, try to handle it as a direct YYYY-MM-DD format
     if (typeof slot.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(slot.date)) {
       dateObj = new Date(`${slot.date}T00:00:00`);
     } else {
-      // Otherwise try to parse it directly
       dateObj = new Date(slot.date);
     }
     
     if (!isNaN(dateObj.getTime())) {
-      // Format: "Saturday, April 19, 2025"
       formattedDate = format(dateObj, "EEEE, MMMM d, yyyy");
     } else {
       throw new Error(`Unable to parse date: ${slot.date}`);
     }
   } catch (dateError) {
     console.error("Error formatting date:", dateError);
-    formattedDate = String(slot.date); // Fallback to the raw date
+    formattedDate = String(slot.date);
   }
   
   return (
