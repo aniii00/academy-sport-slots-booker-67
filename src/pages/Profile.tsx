@@ -7,10 +7,11 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserIcon, LogOutIcon, RefreshCwIcon } from "lucide-react";
+import { UserIcon, LogOutIcon, RefreshCwIcon, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Booking } from "@/types/booking";
+import { format } from "date-fns";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -105,7 +106,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="container max-w-4xl mx-auto p-4">
+    <div className="container max-w-4xl mx-auto p-4 space-y-6">
       <PageHeader 
         title="Profile" 
         action={
@@ -135,7 +136,10 @@ export default function Profile() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Your Bookings</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5" />
+              Your Bookings
+            </CardTitle>
             <Button 
               variant="outline" 
               size="sm"
@@ -150,42 +154,50 @@ export default function Profile() {
             {isLoading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-4 border rounded-lg">
-                    <Skeleton className="h-5 w-3/4 mb-2" />
-                    <Skeleton className="h-4 w-1/2 mb-2" />
-                    <Skeleton className="h-4 w-1/4" />
-                  </div>
+                  <Skeleton key={i} className="h-28" />
                 ))}
               </div>
             ) : error ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">{error}</p>
-                <Button 
-                  variant="outline" 
-                  onClick={fetchBookings}
-                >
-                  Try Again
-                </Button>
+                <Button variant="outline" onClick={fetchBookings}>Try Again</Button>
               </div>
             ) : bookings.length === 0 ? (
-              <p className="text-muted-foreground py-8 text-center">No bookings found.</p>
+              <div className="text-center py-8 space-y-4">
+                <p className="text-muted-foreground">No bookings found.</p>
+                <Button variant="outline" onClick={() => navigate('/slots')}>
+                  Browse Available Slots
+                </Button>
+              </div>
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => (
-                  <div
-                    key={booking.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium">{booking.venues?.name} - {booking.sports?.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Slot: {new Date(booking.slot_time).toLocaleString()}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Status: {booking.status}
-                      </p>
-                    </div>
-                  </div>
+                  <Card key={booking.id} className="bg-gray-50">
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-semibold text-lg mb-1">
+                            {booking.sports?.name} at {booking.venues?.name}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {format(new Date(booking.slot_time), 'EEEE, MMMM d, yyyy')}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {format(new Date(booking.slot_time), 'h:mm a')}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <Badge 
+                            variant={booking.status === 'confirmed' ? 'default' : 'secondary'}
+                            className="mb-2"
+                          >
+                            {booking.status}
+                          </Badge>
+                          <p className="font-medium">₹{booking.amount}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}

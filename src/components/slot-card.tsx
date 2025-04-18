@@ -104,12 +104,18 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   const bookingUrl = `/booking?slotId=${slotId}`;
 
   return (
-    <Card className={cn("transition-all hover:shadow-lg rounded-2xl", className)}>
+    <Card 
+      className={cn(
+        "transition-all hover:shadow-lg rounded-2xl", 
+        isBooked ? "opacity-75" : "hover:scale-102",
+        className
+      )}
+    >
       <CardContent className="p-5">
         <div className="flex justify-between items-start mb-3">
           <div>
-            <h3 className="font-semibold text-lg">{sport.name}</h3>
-            <p className="text-sm text-gray-500">{venue.name}</p>
+            <h3 className="font-semibold text-lg">{sport?.name}</h3>
+            <p className="text-sm text-gray-500">{venue?.name}</p>
           </div>
           <div className="flex items-center text-sports-orange font-semibold bg-sports-lightOrange/50 px-3 py-1 rounded-full">
             <PriceIcon className="h-4 w-4 mr-1" />
@@ -127,13 +133,16 @@ export function SlotCard({ slot, className }: SlotCardProps) {
         
         <div className="flex justify-between items-center">
           {isBooked ? (
-            <Badge variant="secondary" className="w-full justify-center py-2 bg-gray-100 text-gray-500">
-              Booked
+            <Badge 
+              variant="secondary" 
+              className="w-full justify-center py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
+            >
+              Already Booked
             </Badge>
           ) : (
             <Link to={bookingUrl} className="w-full">
               <Button 
-                className="w-full rounded-xl shadow-sm hover:shadow-md bg-gradient-to-r from-sports-blue to-sports-blue/90"
+                className="w-full rounded-xl shadow-sm hover:shadow-md bg-gradient-to-r from-sports-blue to-sports-blue/90 hover:scale-102 transition-all"
               >
                 Book Now
               </Button>
