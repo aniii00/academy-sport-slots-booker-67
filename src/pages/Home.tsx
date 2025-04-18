@@ -51,6 +51,8 @@ export default function Home() {
     setImageUrls([
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/5f51a1cee2aa31d69aad953432b9f088.jpg",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/9e730ba6b383eafb35b15c2524847618.jpg",
+      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/IMG_9675.JPG"
+      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/IMG_9674.JPG"
     ]);
 
     fetchData();
