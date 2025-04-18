@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserIcon, LogOutIcon, RefreshCwIcon, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge"; // Import Badge component
 import type { Booking } from "@/types/booking";
 import { format } from "date-fns";
 
