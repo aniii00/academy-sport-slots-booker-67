@@ -12,6 +12,8 @@ import { Sport, Venue } from "@/types/venue";
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { FloatingQuotes } from "@/components/floating-quotes";
+import { motion } from "framer-motion";
+import { fadeIn, staggerContainer, slideIn, scaleIn } from "@/utils/animations";
 
 export default function Home() {
   const { user } = useAuth();
@@ -47,83 +49,122 @@ export default function Home() {
       }
     };
 
-    // Set the image URLs
     setImageUrls([
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/IMG_9674.JPG",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/IMG_9675.JPG",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/5f51a1cee2aa31d69aad953432b9f088.jpg",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/9e730ba6b383eafb35b15c2524847618.jpg",
-      
     ]);
 
     fetchData();
 
-    // Change the image every 5 seconds
     const intervalId = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % imageUrls.length); // Cycle through images
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % imageUrls.length);
     }, 5000);
 
-    return () => clearInterval(intervalId); // Cleanup on component unmount
+    return () => clearInterval(intervalId);
   }, [imageUrls.length]);
 
   return (
-    <div className="space-y-12 pb-8">
+    <motion.div 
+      className="space-y-12 pb-8"
+      initial="hidden"
+      animate="visible"
+      variants={staggerContainer}
+    >
       <SportBackground>
-        <section className="py-24 px-4 md:px-8 rounded-3xl bg-gradient-to-r from-sports-blue to-sports-blue/80 text-white shadow-lg transition-all hover:shadow-xl relative">
-          {/* Changing Banner Image */}
-          <div className="absolute inset-0">
+        <motion.section 
+          className="py-24 px-4 md:px-8 rounded-3xl bg-gradient-to-r from-sports-blue to-sports-blue/80 text-white shadow-lg transition-all hover:shadow-xl relative overflow-hidden"
+          variants={fadeIn}
+        >
+          <motion.div 
+            className="absolute inset-0"
+            animate={{ scale: 1.1 }}
+            transition={{ duration: 20, repeat: Infinity, repeatType: "reverse" }}
+          >
             <img 
-              src={imageUrls[currentImageIndex]}  // Dynamically changing image
+              src={imageUrls[currentImageIndex]}
               alt="sports action" 
               className="w-full h-full object-cover rounded-3xl shadow-lg"
             />
-          </div>
+          </motion.div>
 
-          {/* Text Overlaid on Banner */}
-          <div className="relative z-10 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
+          <motion.div 
+            className="relative z-10 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10"
+            variants={staggerContainer}
+          >
             <div className="text-center md:text-left md:max-w-2xl">
-              <h1 className="text-5xl md:text-6xl font-extrabold mb-6 animate-fade-in leading-tight tracking-tight uppercase">
+              <motion.h1 
+                className="text-5xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight uppercase"
+                variants={slideIn}
+              >
                 Book Your Turf. Rule Your Game.
-              </h1>
-              <p className="text-xl md:text-2xl mb-8 text-white/90 leading-relaxed italic">
+              </motion.h1>
+              <motion.p 
+                className="text-xl md:text-2xl mb-8 text-white/90 leading-relaxed italic"
+                variants={fadeIn}
+              >
                 Access elite sports venues across Delhi — train smart, play hard, and stay ahead.
-              </p>
-              <Link to="/venue">
-                <Button 
-                  size="lg" 
-                  className="rounded-full px-8 py-6 text-lg bg-white text-sports-blue hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  Book Now
-                  <ArrowRightIcon className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+              </motion.p>
+              <motion.div variants={scaleIn}>
+                <Link to="/venue">
+                  <Button 
+                    size="lg" 
+                    className="rounded-full px-8 py-6 text-lg bg-white text-sports-blue hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Book Now
+                    <ArrowRightIcon className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </motion.div>
             </div>
-          </div>
-        </section>
+          </motion.div>
+        </motion.section>
       </SportBackground>
 
       {user && (
-        <section className="rounded-3xl p-8 bg-gradient-to-r from-sports-lightBlue to-white shadow-lg transition-all hover:shadow-xl">
+        <motion.section 
+          className="rounded-3xl p-8 bg-gradient-to-r from-sports-lightBlue to-white shadow-lg transition-all hover:shadow-xl"
+          variants={fadeIn}
+        >
           <SmartRecommendations />
-        </section>
+        </motion.section>
       )}
 
-      <section className="rounded-3xl p-8 bg-gradient-to-r from-sports-lightOrange to-white shadow-lg transition-all hover:shadow-xl">
+      <motion.section 
+        className="rounded-3xl p-8 bg-gradient-to-r from-sports-lightOrange to-white shadow-lg transition-all hover:shadow-xl"
+        variants={fadeIn}
+      >
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h2 className="text-3xl font-bold text-sports-orange mb-2">Popular Sports</h2>
-            <p className="text-gray-600">Choose your game and own your grind</p>
+            <motion.h2 
+              className="text-3xl font-bold text-sports-orange mb-2"
+              variants={slideIn}
+            >
+              Popular Sports
+            </motion.h2>
+            <motion.p 
+              className="text-gray-600"
+              variants={fadeIn}
+            >
+              Choose your game and own your grind
+            </motion.p>
           </div>
           <Link to="/venue">
-            <Button 
-              variant="outline" 
-              className="rounded-full border-sports-orange text-sports-orange hover:bg-sports-orange hover:text-white transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md"
-            >
-              View All
-              <ArrowRightIcon className="ml-2 h-4 w-4" />
-            </Button>
+            <motion.div whileHover="hover" whileTap="tap" variants={magneticButton}>
+              <Button 
+                variant="outline" 
+                className="rounded-full border-sports-orange text-sports-orange hover:bg-sports-orange hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
+              >
+                View All
+                <ArrowRightIcon className="ml-2 h-4 w-4" />
+              </Button>
+            </motion.div>
           </Link>
         </div>
+        
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             {[1, 2, 3].map((i) => (
@@ -131,28 +172,48 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8"
+            variants={staggerContainer}
+          >
             {sports.map((sport) => (
-              <SportCard key={sport.id} sport={sport} className="transition-all duration-300 hover:scale-105" />
+              <motion.div key={sport.id} variants={scaleIn}>
+                <SportCard sport={sport} className="transition-all duration-300 hover:scale-105" />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
-      </section>
+      </motion.section>
 
-      <section className="rounded-3xl p-8 bg-gradient-to-r from-gray-50 to-white shadow-lg transition-all hover:shadow-xl">
+      <motion.section 
+        className="rounded-3xl p-8 bg-gradient-to-r from-gray-50 to-white shadow-lg transition-all hover:shadow-xl"
+        variants={fadeIn}
+      >
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h2 className="text-3xl font-bold mb-2">Featured Venues</h2>
-            <p className="text-gray-600">Train where the top players train</p>
+            <motion.h2 
+              className="text-3xl font-bold mb-2"
+              variants={slideIn}
+            >
+              Featured Venues
+            </motion.h2>
+            <motion.p 
+              className="text-gray-600"
+              variants={fadeIn}
+            >
+              Train where the top players train
+            </motion.p>
           </div>
           <Link to="/venue">
-            <Button 
-              variant="outline" 
-              className="rounded-full shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105"
-            >
-              View All
-              <ArrowRightIcon className="ml-2 h-4 w-4" />
-            </Button>
+            <motion.div whileHover="hover" whileTap="tap" variants={magneticButton}>
+              <Button 
+                variant="outline" 
+                className="rounded-full shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105"
+              >
+                View All
+                <ArrowRightIcon className="ml-2 h-4 w-4" />
+              </Button>
+            </motion.div>
           </Link>
         </div>
         {isLoading ? (
@@ -162,7 +223,10 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+            variants={staggerContainer}
+          >
             {venues.map((venue) => (
               <VenueCard 
                 key={venue.id} 
@@ -170,13 +234,26 @@ export default function Home() {
                 className="transition-all duration-300 hover:scale-105"
               />
             ))}
-          </div>
+          </motion.div>
         )}
-      </section>
+      </motion.section>
 
       <FloatingQuotes />
-    </div>
+
+      <motion.div
+        className="fixed top-20 right-10 w-32 h-32 pointer-events-none"
+        animate={{
+          y: [0, 20, 0],
+          rotate: [0, 180, 360],
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          ease: "linear"
+        }}
+      >
+        <div className="w-full h-full bg-gradient-to-r from-sports-blue/10 to-sports-orange/10 rounded-full blur-xl" />
+      </motion.div>
+    </motion.div>
   );
 }
-
-
