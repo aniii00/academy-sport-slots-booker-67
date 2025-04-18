@@ -1,49 +1,73 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPinIcon, ClockIcon, StarIcon } from "lucide-react";
-import { centers, sports, generateTimeSlots, Center, Sport, TimeSlot } from "@/data/mockData";
 import { useAuth } from "@/contexts/AuthContext";
-
-// Mock user preferences (in a real app, this would come from user profile/database)
-const mockUserPreferences = {
-  location: "Mumbai",
-  favoriteSportId: "sport-2", // Badminton
-  pastBookings: ["center-1", "center-3"]
-};
+import { supabase } from "@/integrations/supabase/client";
+import { Venue, Sport, Slot } from "@/types/venue";
+import { toast } from "@/components/ui/sonner";
 
 export function SmartRecommendations() {
   const { user } = useAuth();
-  const [locationBasedCenters, setLocationBasedCenters] = useState<Center[]>([]);
-  const [favoriteSlots, setFavoriteSlots] = useState<TimeSlot[]>([]);
-  const [previousCenters, setPreviousCenters] = useState<Center[]>([]);
+  const [nearbyVenues, setNearbyVenues] = useState<Venue[]>([]);
+  const [favoriteSports, setFavoriteSports] = useState<Sport[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<Slot[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Get centers based on user's location
-    const centersInLocation = centers.filter(center => 
-      center.city === mockUserPreferences.location
-    ).slice(0, 2); // Limit to 2 recommendations
-    setLocationBasedCenters(centersInLocation);
-    
-    // Get slots for favorite sport
-    const allSlots = generateTimeSlots();
-    const slotsForFavoriteSport = allSlots.filter(slot => 
-      slot.sportId === mockUserPreferences.favoriteSportId && 
-      slot.available
-    ).slice(0, 2); // Limit to 2 recommendations
-    setFavoriteSlots(slotsForFavoriteSport);
-    
-    // Get previously booked centers
-    const previouslyBookedCenters = centers.filter(center => 
-      mockUserPreferences.pastBookings.includes(center.id)
-    ).slice(0, 2); // Limit to 2 recommendations
-    setPreviousCenters(previouslyBookedCenters);
-  }, []);
+    const fetchRecommendations = async () => {
+      try {
+        // Get user preferences
+        const { data: preferences } = await supabase
+          .from('user_preferences')
+          .select('*')
+          .eq('user_id', user?.id)
+          .single();
 
-  // Get sport object for favorite sport
-  const favoriteSport = sports.find(sport => sport.id === mockUserPreferences.favoriteSportId);
-  
+        // Get nearby venues (for now, just get latest 2)
+        const { data: venuesData } = await supabase
+          .from('venues')
+          .select('*')
+          .limit(2);
+        
+        setNearbyVenues(venuesData || []);
+
+        // Get favorite sports if user has preferences
+        if (preferences?.favorite_sports?.length) {
+          const { data: sportsData } = await supabase
+            .from('sports')
+            .select('*')
+            .in('id', preferences.favorite_sports);
+          
+          setFavoriteSports(sportsData || []);
+
+          // Get available slots for favorite sports
+          const { data: slotsData } = await supabase
+            .from('slots')
+            .select('*')
+            .in('sport_id', preferences.favorite_sports)
+            .eq('available', true)
+            .gte('date', new Date().toISOString().split('T')[0])
+            .order('date', { ascending: true })
+            .limit(2);
+          
+          setAvailableSlots(slotsData || []);
+        }
+      } catch (error) {
+        console.error("Error fetching recommendations:", error);
+        toast.error("Failed to load recommendations");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchRecommendations();
+    }
+  }, [user]);
+
   // Only render if user is signed in
   if (!user) return null;
 
@@ -60,13 +84,13 @@ export function SmartRecommendations() {
           <h3 className="text-lg font-semibold">Near Your Location</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {locationBasedCenters.length > 0 ? (
-            locationBasedCenters.map(center => (
-              <Link key={center.id} to={`/slots?centerId=${center.id}`}>
+          {nearbyVenues.length > 0 ? (
+            nearbyVenues.map(venue => (
+              <Link key={venue.id} to={`/slots?venueId=${venue.id}`}>
                 <Card className="transition-all hover:shadow-lg rounded-xl overflow-hidden">
                   <CardContent className="p-4">
-                    <h4 className="font-semibold">{center.name}</h4>
-                    <p className="text-sm text-gray-500 mb-2">{center.location}, {center.city}</p>
+                    <h4 className="font-semibold">{venue.name}</h4>
+                    <p className="text-sm text-gray-500 mb-2">{venue.location}, {venue.address}</p>
                     <Button variant="outline" size="sm" className="w-full mt-2 rounded-lg shadow-sm hover:shadow-md">
                       View Slots
                     </Button>
@@ -75,73 +99,55 @@ export function SmartRecommendations() {
               </Link>
             ))
           ) : (
-            <p className="text-sm text-gray-500">No centers found near your location</p>
+            <p className="text-sm text-gray-500">No venues found near your location</p>
           )}
         </div>
       </div>
       
-      {/* For Your Favorite Sport */}
-      {favoriteSport && (
+      {/* For Your Favorite Sports */}
+      {favoriteSports.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-full bg-gradient-to-r from-sports-lightOrange to-sports-lightOrange/70 shadow-sm">
               <StarIcon className="h-5 w-5 text-sports-orange" />
             </div>
-            <h3 className="text-lg font-semibold">For Your Favorite Sport: {favoriteSport.name}</h3>
+            <h3 className="text-lg font-semibold">For Your Favorite Sports</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {favoriteSlots.length > 0 ? (
-              favoriteSlots.map(slot => {
-                const center = centers.find(c => c.id === slot.centerId);
-                return (
-                  <Link key={slot.id} to={`/booking?slotId=${slot.id}`}>
-                    <Card className="transition-all hover:shadow-lg rounded-xl overflow-hidden">
-                      <CardContent className="p-4">
-                        <h4 className="font-semibold">{favoriteSport.name} at {center?.name}</h4>
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <ClockIcon className="h-4 w-4 mr-1 text-sports-blue" />
-                          {slot.date} • {slot.startTime} - {slot.endTime}
-                        </div>
-                        <div className="mt-2 flex justify-between items-center">
-                          <span className="font-medium text-sports-orange">₹{slot.price}</span>
-                          <Button size="sm" className="rounded-lg shadow-sm hover:shadow-md">Book Now</Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })
-            ) : (
-              <p className="text-sm text-gray-500">No available slots for your favorite sport</p>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {/* Based on Past Bookings */}
-      {previousCenters.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-full bg-gradient-to-r from-gray-200 to-gray-100 shadow-sm">
-              <ClockIcon className="h-5 w-5 text-gray-600" />
-            </div>
-            <h3 className="text-lg font-semibold">Based on Your Previous Bookings</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {previousCenters.map(center => (
-              <Link key={center.id} to={`/slots?centerId=${center.id}`}>
+            {availableSlots.map(slot => (
+              <Link key={slot.id} to={`/booking?slotId=${slot.id}`}>
                 <Card className="transition-all hover:shadow-lg rounded-xl overflow-hidden">
                   <CardContent className="p-4">
-                    <h4 className="font-semibold">{center.name}</h4>
-                    <p className="text-sm text-gray-500 mb-2">{center.location}, {center.city}</p>
-                    <Button variant="outline" size="sm" className="w-full mt-2 rounded-lg shadow-sm hover:shadow-md">
-                      Book Again
-                    </Button>
+                    <h4 className="font-semibold">{
+                      favoriteSports.find(s => s.id === slot.sport_id)?.name
+                    }</h4>
+                    <div className="flex items-center text-sm text-gray-500 mt-1">
+                      <ClockIcon className="h-4 w-4 mr-1 text-sports-blue" />
+                      {slot.date} • {slot.start_time} - {slot.end_time}
+                    </div>
+                    <div className="mt-2 flex justify-between items-center">
+                      <span className="font-medium text-sports-orange">₹{slot.price}</span>
+                      <Button size="sm" className="rounded-lg shadow-sm hover:shadow-md">Book Now</Button>
+                    </div>
                   </CardContent>
                 </Card>
               </Link>
             ))}
           </div>
+        </div>
+      )}
+      
+      {isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-4">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+                <div className="h-8 bg-gray-200 rounded w-full"></div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
