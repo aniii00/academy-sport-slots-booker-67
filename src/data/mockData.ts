@@ -56,13 +56,27 @@ export const sports: Sport[] = [
   }
 ];
 
-// Centers data
-export const centers: Center[] = centers.map(center => ({
-  ...center,
-  sports: center.sports.filter(sportId => 
-    ['sport-1', 'sport-2'].includes(sportId)
-  )
-}));
+// Centers data with only Box Cricket and Box Football
+export const centers: Center[] = [
+  {
+    id: "center-1",
+    name: "Prashant Academy Bandra",
+    location: "Bandra",
+    city: "Mumbai",
+    address: "24, Hill Road, Bandra West, Mumbai - 400050",
+    sports: ["sport-1", "sport-2"],
+    image: "https://images.unsplash.com/photo-1518005020951-eccb494ad742"
+  },
+  {
+    id: "center-2",
+    name: "Prashant Academy Powai",
+    location: "Powai",
+    city: "Mumbai",
+    address: "Central Avenue, Hiranandani Gardens, Powai, Mumbai - 400076",
+    sports: ["sport-1", "sport-2"],
+    image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625"
+  }
+];
 
 // Generate time slots for the current and next 7 days
 export const generateTimeSlots = (): TimeSlot[] => {
