@@ -12,11 +12,11 @@ export function Footer() {
       <div className="absolute inset-0 bg-black/50 backdrop-blur-md rounded-t-3xl"></div>
 
       {/* Footer Content */}
-      <div className="relative z-10 container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+      <div className="relative z-10 container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Brand Description */}
-          <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl">
-            <h3 className="text-2xl font-bold text-white mb-4">Trainease</h3>
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl">
+            <h3 className="text-2xl font-bold text-white mb-3">Trainease</h3>
             <p className="text-gray-200 text-sm leading-relaxed">
               Train like a beast, book like a breeze. <br />
               India's dopest sports zones are just a tap away — grab your slot and let the grind begin. 🏸🔥
@@ -24,9 +24,9 @@ export function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl">
-            <h3 className="text-xl font-semibold text-white mb-4">Quick Links</h3>
-            <ul className="space-y-2 text-gray-300 text-sm">
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl">
+            <h3 className="text-xl font-semibold text-white mb-3">Quick Links</h3>
+            <ul className="space-y-1 text-gray-300 text-sm">
               <li>
                 <Link to="/" className="hover:text-white">Home</Link>
               </li>
@@ -43,8 +43,8 @@ export function Footer() {
           </div>
 
           {/* Contact Info */}
-          <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl">
-            <h3 className="text-xl font-semibold text-white mb-4">Contact Us</h3>
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl">
+            <h3 className="text-xl font-semibold text-white mb-3">Contact Us</h3>
             <address className="not-italic text-gray-300 text-sm">
               <p>Email: info@trainease.com</p>
               <p>Phone: +91 98765 43210</p>
@@ -58,7 +58,7 @@ export function Footer() {
         </div>
 
         {/* Copyright */}
-        <div className="mt-10 pt-6 border-t border-white/20 text-center text-sm text-gray-300">
+        <div className="mt-6 pt-4 border-t border-white/20 text-center text-sm text-gray-300">
           &copy; {new Date().getFullYear()} Trainease. All rights reserved.
         </div>
       </div>
