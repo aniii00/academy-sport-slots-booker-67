@@ -17,6 +17,7 @@ export default function Venue() {
   const [filteredVenues, setFilteredVenues] = useState<Venue[]>([]);
   const [selectedSport, setSelectedSport] = useState<Sport | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
+  const [duplicates, setDuplicates] = useState<{[key: string]: Venue[]}>({});
   
   useEffect(() => {
     // Fetch venues and sports from Supabase
@@ -48,6 +49,25 @@ export default function Venue() {
         setVenues(venueData || []);
         setFilteredVenues(venueData || []);
         setSports(sportData || []);
+        
+        // Check for duplicates
+        const duplicateVenues: {[key: string]: Venue[]} = {};
+        venueData?.forEach(venue => {
+          if (!duplicateVenues[venue.name]) {
+            duplicateVenues[venue.name] = [];
+          }
+          duplicateVenues[venue.name].push(venue);
+        });
+        
+        // Filter to only include names with multiple venues
+        const actualDuplicates: {[key: string]: Venue[]} = {};
+        Object.entries(duplicateVenues).forEach(([name, venues]) => {
+          if (venues.length > 1) {
+            actualDuplicates[name] = venues;
+          }
+        });
+        
+        setDuplicates(actualDuplicates);
         
         // Set initial sport filter if sportId is in URL
         if (initialSportId) {
@@ -119,6 +139,63 @@ export default function Venue() {
     }
   };
   
+  const handleRemoveDuplicate = async (venueId: string) => {
+    try {
+      // First delete related data in venue_sports
+      const { error: sportError } = await supabase
+        .from('venue_sports')
+        .delete()
+        .eq('venue_id', venueId);
+      
+      if (sportError) throw sportError;
+      
+      // Delete related data in venue_timings
+      const { error: timingError } = await supabase
+        .from('venue_timings')
+        .delete()
+        .eq('venue_id', venueId);
+      
+      if (timingError) throw timingError;
+      
+      // Delete related data in venue_pricing
+      const { error: pricingError } = await supabase
+        .from('venue_pricing')
+        .delete()
+        .eq('venue_id', venueId);
+      
+      if (pricingError) throw pricingError;
+      
+      // Finally delete the venue
+      const { error: venueError } = await supabase
+        .from('venues')
+        .delete()
+        .eq('id', venueId);
+      
+      if (venueError) throw venueError;
+      
+      // Update the UI
+      setVenues(prev => prev.filter(v => v.id !== venueId));
+      setFilteredVenues(prev => prev.filter(v => v.id !== venueId));
+      
+      // Update duplicates
+      setDuplicates(prev => {
+        const updated = { ...prev };
+        Object.entries(updated).forEach(([name, venues]) => {
+          updated[name] = venues.filter(v => v.id !== venueId);
+          if (updated[name].length <= 1) {
+            delete updated[name];
+          }
+        });
+        return updated;
+      });
+      
+      toast.success("Duplicate venue removed successfully");
+    } catch (error: any) {
+      console.error("Error removing duplicate:", error);
+      toast.error("Failed to remove duplicate venue");
+    }
+  };
+  
   return (
     <div>
       <PageHeader 
@@ -131,6 +208,34 @@ export default function Venue() {
       />
       
       <FilterBar onFilterChange={handleFilterChange} className="mb-6" />
+      
+      {/* Display duplicates if any */}
+      {Object.keys(duplicates).length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+          <h3 className="text-amber-800 font-semibold mb-2">Duplicate Venues Detected</h3>
+          {Object.entries(duplicates).map(([name, dupes]) => (
+            <div key={name} className="mb-4">
+              <p className="font-medium">{name} ({dupes.length} instances)</p>
+              <div className="mt-2 grid gap-2">
+                {dupes.map(venue => (
+                  <div key={venue.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                    <div>
+                      <p className="text-sm font-mono text-gray-600">ID: {venue.id}</p>
+                      <p className="text-sm">{venue.address}</p>
+                    </div>
+                    <button 
+                      onClick={() => handleRemoveDuplicate(venue.id)}
+                      className="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded text-sm"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       
       {isLoading ? (
         <div className="text-center py-12">
