@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format, addDays, parse, addMinutes } from "date-fns";
@@ -391,17 +390,21 @@ export default function Slots() {
       const slotsToInsert: Omit<Slot, 'id'>[] = [];
       
       for (const timing of timingsData) {
-        const startTime = parse(timing.start_time, 'HH:mm:ss', new Date());
+        let currentTime = parse(timing.start_time, 'HH:mm:ss', new Date());
         const endTime = parse(timing.end_time, 'HH:mm:ss', new Date());
         
-        let currentTime = startTime;
         while (currentTime < endTime) {
           const slotStartTime = format(currentTime, 'HH:mm:ss');
-          
           currentTime = addMinutes(currentTime, 30);
           const slotEndTime = format(currentTime, 'HH:mm:ss');
           
-          const price = getSlotPrice(pricingData, dayOfWeek, slotStartTime, timing.is_morning);
+          // Get price based on timing rules
+          const price = getSlotPrice(
+            pricingData || [], 
+            dayOfWeek, 
+            slotStartTime,
+            timing.is_morning
+          );
           
           slotsToInsert.push({
             venue_id: venueId,
@@ -455,42 +458,20 @@ export default function Slots() {
     slotTime: string,
     isMorning: boolean
   ): number => {
+    const hour = parseInt(slotTime.split(':')[0]);
+    
     const filteredPricing = pricingData.filter(p => p.is_morning === isMorning);
     
-    const daySpecificPricing = filteredPricing.find(p => p.day_group.toLowerCase() === dayOfWeek);
-    if (daySpecificPricing) {
-      return daySpecificPricing.price;
-    }
-    
-    const isWeekend = ['friday', 'saturday', 'sunday'].includes(dayOfWeek);
-    
-    let applicablePricing: VenuePricing | undefined;
-    
-    if (isWeekend) {
-      applicablePricing = filteredPricing.find(p => 
-        p.day_group === 'friday-sunday' && 
-        isTimeInRange(slotTime, p.time_range)
-      );
+    if (dayOfWeek === 'sunday') {
+      if (hour >= 5 && hour < 7) return 650;
+      if (hour >= 7 && hour < 18) return 650;
+      if (hour >= 18 && hour < 23) return 700;
     } else {
-      applicablePricing = filteredPricing.find(p => 
-        p.day_group === 'monday-thursday' && 
-        isTimeInRange(slotTime, p.time_range)
-      );
+      if (hour >= 16 && hour < 18) return 600;
+      if (hour >= 18 && hour < 23) return 650;
     }
     
-    if (!applicablePricing) {
-      applicablePricing = filteredPricing.find(p => 
-        isTimeInRange(slotTime, p.time_range)
-      );
-    }
-    
-    if (!applicablePricing) {
-      applicablePricing = filteredPricing.find(p => 
-        p.day_group === 'monday-sunday'
-      );
-    }
-    
-    return applicablePricing?.price || 500;
+    return 600;
   };
   
   const isTimeInRange = (time: string, range: string): boolean => {
