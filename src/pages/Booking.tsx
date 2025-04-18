@@ -304,7 +304,7 @@ export default function Booking() {
                   <h4 className="font-semibold">Total Amount</h4>
                   <div className="flex items-center text-xl font-bold text-sports-orange">
                     <PriceIcon className="h-5 w-5 mr-1" />
-                    <span>₹{slot.price}</span>
+                    <span>{slot.price}</span>
                   </div>
                 </div>
               </div>
