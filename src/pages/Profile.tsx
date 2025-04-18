@@ -64,10 +64,10 @@ export default function Profile() {
       console.log("Bookings fetched:", data);
       
       // Transform the data to include amount (default to 0 if not present)
-      const bookingsWithAmount = (data as any[])?.map(booking => ({
+      const bookingsWithAmount = (data as Booking[]).map(booking => ({
         ...booking,
         amount: booking.amount || 0
-      })) || [];
+      }));
       
       setBookings(bookingsWithAmount);
     } catch (error: any) {
@@ -184,13 +184,18 @@ export default function Profile() {
                   let formattedDate = '';
                   let formattedTime = '';
                   try {
-                    const date = parseISO(booking.slot_time);
-                    formattedDate = format(date, 'EEEE, MMMM d, yyyy');
-                    formattedTime = format(date, 'h:mm a');
+                    // Validate the date
+                    const date = new Date(booking.slot_time);
+                    if (!isNaN(date.getTime())) {
+                      formattedDate = format(date, 'EEEE, MMMM d, yyyy');
+                      formattedTime = format(date, 'h:mm a');
+                    } else {
+                      console.error("Invalid date:", booking.slot_time);
+                      formattedDate = 'Invalid date';
+                    }
                   } catch (error) {
                     console.error("Date parsing error:", error, booking.slot_time);
                     formattedDate = 'Invalid date';
-                    formattedTime = '';
                   }
                   
                   return (

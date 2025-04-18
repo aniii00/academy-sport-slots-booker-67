@@ -30,10 +30,10 @@ export function BookingsList() {
         if (error) throw error;
         
         // Transform the data to include amount (default to 0 if not present)
-        const bookingsWithAmount = (data as any[])?.map(booking => ({
+        const bookingsWithAmount = (data as Booking[]).map(booking => ({
           ...booking,
           amount: booking.amount || 0
-        })) || [];
+        }));
         
         setBookings(bookingsWithAmount);
       } catch (error) {
@@ -79,10 +79,10 @@ export function BookingsList() {
   
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = 
-      booking.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.phone.includes(searchTerm) ||
-      booking.venues?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.sports?.name.toLowerCase().includes(searchTerm.toLowerCase());
+      (booking.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (booking.phone?.includes(searchTerm) || false) ||
+      (booking.venues?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (booking.sports?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
       
     const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
     
@@ -140,7 +140,13 @@ export function BookingsList() {
               // Safely format the date
               let formattedDateTime = 'Invalid date';
               try {
-                formattedDateTime = format(parseISO(booking.slot_time), "PPp");
+                // Validate the date string first
+                const date = new Date(booking.slot_time);
+                if (!isNaN(date.getTime())) {
+                  formattedDateTime = format(date, "PPp");
+                } else {
+                  console.error("Invalid date format:", booking.slot_time);
+                }
               } catch (error) {
                 console.error("Date formatting error:", error, booking.slot_time);
               }
