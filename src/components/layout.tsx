@@ -28,48 +28,48 @@ export function Layout() {
       
       {!isMobile && <Footer />}
       
-      {/* Mobile Bottom Navigation - Android style */}
+      {/* Mobile Bottom Navigation - Reduced Height */}
       {isMobile && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-          <div className="flex justify-around items-center h-16">
+          <div className="flex justify-around items-center h-14"> {/* Reduced from h-16 to h-14 */}
             <Link 
               to="/" 
-              className={`flex flex-col items-center justify-center flex-1 py-2 ${
+              className={`flex flex-col items-center justify-center flex-1 py-1 ${
                 isActive('/') ? 'text-sports-blue' : 'text-gray-500'
               }`}
             >
-              <HomeIcon className="h-6 w-6" />
-              <span className="text-xs mt-1">Home</span>
+              <HomeIcon className="h-5 w-5" /> {/* Reduced from h-6 w-6 */}
+              <span className="text-xs">Home</span>
             </Link>
             
             <Link 
               to="/venue" 
-              className={`flex flex-col items-center justify-center flex-1 py-2 ${
+              className={`flex flex-col items-center justify-center flex-1 py-1 ${
                 isActive('/venue') ? 'text-sports-blue' : 'text-gray-500'
               }`}
             >
-              <GridIcon className="h-6 w-6" />
-              <span className="text-xs mt-1">Venues</span>
+              <GridIcon className="h-5 w-5" /> {/* Reduced from h-6 w-6 */}
+              <span className="text-xs">Venues</span>
             </Link>
             
             <Link 
               to="/slots" 
-              className={`flex flex-col items-center justify-center flex-1 py-2 ${
+              className={`flex flex-col items-center justify-center flex-1 py-1 ${
                 isActive('/slots') ? 'text-sports-blue' : 'text-gray-500'
               }`}
             >
-              <CalendarIcon className="h-6 w-6" />
-              <span className="text-xs mt-1">Slots</span>
+              <CalendarIcon className="h-5 w-5" /> {/* Reduced from h-6 w-6 */}
+              <span className="text-xs">Slots</span>
             </Link>
             
             <Link 
               to="/profile" 
-              className={`flex flex-col items-center justify-center flex-1 py-2 ${
+              className={`flex flex-col items-center justify-center flex-1 py-1 ${
                 isActive('/profile') ? 'text-sports-blue' : 'text-gray-500'
               }`}
             >
-              <UserIcon className="h-6 w-6" />
-              <span className="text-xs mt-1">Profile</span>
+              <UserIcon className="h-5 w-5" /> {/* Reduced from h-6 w-6 */}
+              <span className="text-xs">Profile</span>
             </Link>
           </div>
         </nav>
@@ -77,3 +77,4 @@ export function Layout() {
     </div>
   );
 }
+
