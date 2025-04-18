@@ -4,10 +4,10 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Booking } from "@/types/booking";
 import { toast } from "@/components/ui/sonner";
+import { formatDateForDisplay, formatTimeForDisplay } from "@/utils/dateUtils";
 
 export function BookingsList() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -136,62 +136,43 @@ export function BookingsList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {bookings.filter(booking => {
-              const matchesSearch = 
-                (booking.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-                (booking.phone?.includes(searchTerm) || false) ||
-                (booking.venues?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-                (booking.sports?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
-                
-              const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
-              
-              return matchesSearch && matchesStatus;
-            }).map((booking) => {
-              // Safely format the date
-              let formattedDateTime = 'Invalid date';
-              try {
-                if (booking.slot_time) {
-                  // Ensure valid date format
-                  const date = new Date(booking.slot_time);
-                  if (!isNaN(date.getTime())) {
-                    formattedDateTime = format(date, "PPp");
-                  } else {
-                    console.error("Invalid date format:", booking.slot_time);
-                  }
-                }
-              } catch (error) {
-                console.error("Date formatting error:", error, booking.slot_time);
-              }
-              
-              return (
-                <TableRow key={booking.id}>
-                  <TableCell className="font-medium">
-                    {booking.full_name}
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{booking.venues?.name}</div>
-                      <div className="text-sm text-gray-500">{booking.sports?.name}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {formattedDateTime}
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={
-                        booking.status === 'confirmed' ? 'default' :
-                        booking.status === 'cancelled' ? 'destructive' :
-                        'secondary'
-                      }
-                    >
-                      {booking.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{booking.phone}</TableCell>
-                </TableRow>
-              );
-            })}
+            {filteredBookings.map((booking) => (
+              <TableRow key={booking.id}>
+                <TableCell className="font-medium">
+                  {booking.full_name}
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <div className="font-medium">{booking.venues?.name}</div>
+                    <div className="text-sm text-gray-500">{booking.sports?.name}</div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {booking.slot_time ? (
+                    <>
+                      {formatDateForDisplay(booking.slot_time)}
+                      <div className="text-sm text-gray-500">
+                        {formatTimeForDisplay(booking.slot_time)}
+                      </div>
+                    </>
+                  ) : (
+                    "No date provided"
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge 
+                    variant={
+                      booking.status === 'confirmed' ? 'default' :
+                      booking.status === 'cancelled' ? 'destructive' :
+                      'secondary'
+                    }
+                  >
+                    {booking.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>{booking.phone}</TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>

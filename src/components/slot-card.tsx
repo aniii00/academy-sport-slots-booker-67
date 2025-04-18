@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,8 @@ import { Link } from "react-router-dom";
 import { Slot, Venue, Sport } from "@/types/venue";
 import { TimeIcon, PriceIcon } from "@/utils/iconMapping";
 import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO } from "date-fns";
+import { formatDateForDisplay } from "@/utils/dateUtils";
+import { parseISO, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/sonner";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,6 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        // Get venue info
         const { data: venueData, error: venueError } = await supabase
           .from('venues')
           .select('*')
@@ -35,7 +34,6 @@ export function SlotCard({ slot, className }: SlotCardProps) {
         if (venueError) throw venueError;
         setVenue(venueData);
         
-        // Get sport info
         const { data: sportData, error: sportError } = await supabase
           .from('sports')
           .select('*')
@@ -45,24 +43,20 @@ export function SlotCard({ slot, className }: SlotCardProps) {
         if (sportError) throw sportError;
         setSport(sportData);
         
-        // For temporary slots, check if there are any bookings for this slot time/venue/sport
         if (slot.id.startsWith('temp-')) {
           try {
-            // Ensure date is properly formatted (YYYY-MM-DD)
             const dateStr = slot.date.includes('-') 
               ? slot.date 
               : `${slot.date.substring(0, 4)}-${slot.date.substring(4, 6)}-${slot.date.substring(6, 8)}`;
               
-            // Ensure time is properly formatted (HH:MM:SS)
             const timeStr = slot.start_time.includes(':') 
               ? slot.start_time 
               : `${slot.start_time.substring(0, 2)}:${slot.start_time.substring(2, 4)}:${slot.start_time.length > 4 ? slot.start_time.substring(4, 6) : '00'}`;
               
             const slotDateTime = `${dateStr}T${timeStr}`;
             
-            // Validate the datetime string
             const testDate = new Date(slotDateTime);
-            if (isNaN(testDate.getTime())) {
+            if (!isValid(testDate)) {
               throw new Error("Invalid date format");
             }
             
@@ -83,7 +77,6 @@ export function SlotCard({ slot, className }: SlotCardProps) {
           }
         }
         
-        // Subscribe to booking changes for this slot
         const bookingChannel = supabase
           .channel('booking-updates')
           .on(
@@ -94,15 +87,12 @@ export function SlotCard({ slot, className }: SlotCardProps) {
               table: 'bookings'
             },
             (payload: any) => {
-              // Check if this booking matches our slot
               if (payload.new && 
                   payload.new.venue_id === slot.venue_id && 
                   payload.new.sport_id === slot.sport_id) {
                   
-                // For temp slots, check if the slot time matches
                 if (slot.id.startsWith('temp-')) {
                   try {
-                    // Format the slot date and time
                     const dateStr = slot.date.includes('-') 
                       ? slot.date 
                       : `${slot.date.substring(0, 4)}-${slot.date.substring(4, 6)}-${slot.date.substring(6, 8)}`;
@@ -113,7 +103,6 @@ export function SlotCard({ slot, className }: SlotCardProps) {
                       
                     const slotDateTime = `${dateStr}T${timeStr}`;
                     
-                    // Check if this booking matches our slot time
                     if (payload.new.slot_time === slotDateTime) {
                       setIsBooked(true);
                     }
@@ -121,7 +110,6 @@ export function SlotCard({ slot, className }: SlotCardProps) {
                     console.error("Error checking slot match:", error);
                   }
                 } 
-                // For regular slots, check the slot_id
                 else if (payload.new.slot_id === slot.id) {
                   setIsBooked(true);
                 }
@@ -130,7 +118,6 @@ export function SlotCard({ slot, className }: SlotCardProps) {
           )
           .subscribe();
           
-        // Subscribe to slot changes for regular slots
         const slotChannel = supabase
           .channel('slot-updates')
           .on(
@@ -181,26 +168,23 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   
   let formattedDate;
   try {
-    // Ensure date has correct format (YYYY-MM-DD)
     const dateStr = slot.date.includes('-') 
       ? slot.date 
       : `${slot.date.substring(0, 4)}-${slot.date.substring(4, 6)}-${slot.date.substring(6, 8)}`;
     
-    // Parse the date string
-    const dateObj = parseISO(dateStr);
+    const isoDateStr = `${dateStr}T00:00:00Z`;
+    const dateObj = parseISO(isoDateStr);
     
-    // Check if date is valid
-    if (isNaN(dateObj.getTime())) {
+    if (!isValid(dateObj)) {
       throw new Error("Invalid date");
     }
     
-    formattedDate = format(dateObj, "EEE, dd MMM yyyy");
+    formattedDate = formatDateForDisplay(isoDateStr, "EEE, dd MMM yyyy");
   } catch (error) {
     console.error("Date formatting error:", error, slot.date);
     formattedDate = "Invalid date";
   }
 
-  // Create a safe booking URL with properly encoded parameters
   const slotId = encodeURIComponent(slot.id);
   const bookingUrl = `/booking?slotId=${slotId}`;
 

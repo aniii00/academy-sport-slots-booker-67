@@ -11,8 +11,8 @@ import { UserIcon, LogOutIcon, RefreshCwIcon, CalendarIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { formatDateForDisplay, formatTimeForDisplay } from "@/utils/dateUtils";
 import type { Booking } from "@/types/booking";
-import { format, parseISO } from "date-fns";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -179,54 +179,34 @@ export default function Profile() {
               </div>
             ) : (
               <div className="space-y-4">
-                {bookings.map((booking) => {
-                  // Safely parse the date with error handling
-                  let formattedDate = '';
-                  let formattedTime = '';
-                  try {
-                    // Validate the date
-                    const date = new Date(booking.slot_time);
-                    if (!isNaN(date.getTime())) {
-                      formattedDate = format(date, 'EEEE, MMMM d, yyyy');
-                      formattedTime = format(date, 'h:mm a');
-                    } else {
-                      console.error("Invalid date:", booking.slot_time);
-                      formattedDate = 'Invalid date';
-                    }
-                  } catch (error) {
-                    console.error("Date parsing error:", error, booking.slot_time);
-                    formattedDate = 'Invalid date';
-                  }
-                  
-                  return (
-                    <Card key={booking.id} className="bg-gray-50">
-                      <CardContent className="p-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="font-semibold text-lg mb-1">
-                              {booking.sports?.name} at {booking.venues?.name}
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                              {formattedDate}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {formattedTime}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <Badge 
-                              variant={booking.status === 'confirmed' ? 'default' : 'secondary'}
-                              className="mb-2"
-                            >
-                              {booking.status}
-                            </Badge>
-                            <p className="font-medium">₹{booking.amount}</p>
-                          </div>
+                {bookings.map((booking) => (
+                  <Card key={booking.id} className="bg-gray-50">
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-semibold text-lg mb-1">
+                            {booking.sports?.name} at {booking.venues?.name}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {formatDateForDisplay(booking.slot_time)}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {formatTimeForDisplay(booking.slot_time)}
+                          </p>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        <div className="text-right">
+                          <Badge 
+                            variant={booking.status === 'confirmed' ? 'default' : 'secondary'}
+                            className="mb-2"
+                          >
+                            {booking.status}
+                          </Badge>
+                          <p className="font-medium">₹{booking.amount}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
           </CardContent>

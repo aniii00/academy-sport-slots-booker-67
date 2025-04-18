@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { format, parseISO, isValid } from "date-fns";
 
 /**
  * Safely formats a date string in ISO format
@@ -10,7 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 export function formatDateTimeToISO(date: string, time: string): string | null {
   try {
     // Clean and normalize date
-    let dateStr = date.trim();
+    let dateStr = date?.trim() || '';
+    if (!dateStr) return null;
+
     if (!dateStr.includes('-')) {
       // Format YYYYMMDD to YYYY-MM-DD
       if (dateStr.length === 8) {
@@ -29,7 +32,9 @@ export function formatDateTimeToISO(date: string, time: string): string | null {
     }
     
     // Clean and normalize time
-    let timeStr = time.trim();
+    let timeStr = time?.trim() || '';
+    if (!timeStr) return null;
+
     if (!timeStr.includes(':')) {
       // Format HHMM to HH:MM:00
       if (timeStr.length === 4) {
@@ -59,7 +64,7 @@ export function formatDateTimeToISO(date: string, time: string): string | null {
     
     // Validate the result is a valid date
     const testDate = new Date(isoString);
-    if (isNaN(testDate.getTime())) {
+    if (!isValid(testDate)) {
       console.error("Invalid date/time combination:", isoString);
       return null;
     }
@@ -68,6 +73,48 @@ export function formatDateTimeToISO(date: string, time: string): string | null {
   } catch (error) {
     console.error("Error formatting date/time:", error);
     return null;
+  }
+}
+
+/**
+ * Safely formats a date for display
+ * @param dateString The ISO date string to format
+ * @param formatString The date-fns format string to use
+ * @returns Formatted date string or a fallback message if invalid
+ */
+export function formatDateForDisplay(dateString: string | null | undefined, formatString: string = "EEEE, MMMM d, yyyy"): string {
+  if (!dateString) return "Date unavailable";
+  
+  try {
+    const date = parseISO(dateString);
+    if (!isValid(date)) {
+      return "Invalid date";
+    }
+    return format(date, formatString);
+  } catch (error) {
+    console.error("Error formatting date for display:", error, dateString);
+    return "Date formatting error";
+  }
+}
+
+/**
+ * Safely formats a time for display
+ * @param timeString The time part of an ISO date string
+ * @param formatString The date-fns format string to use
+ * @returns Formatted time string or a fallback message if invalid
+ */
+export function formatTimeForDisplay(dateString: string | null | undefined, formatString: string = "h:mm a"): string {
+  if (!dateString) return "Time unavailable";
+  
+  try {
+    const date = parseISO(dateString);
+    if (!isValid(date)) {
+      return "Invalid time";
+    }
+    return format(date, formatString);
+  } catch (error) {
+    console.error("Error formatting time for display:", error, dateString);
+    return "Time formatting error";
   }
 }
 
