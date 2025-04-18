@@ -1,4 +1,3 @@
-
 // Mock data for Prashant Academy sports booking app
 
 export interface Sport {
@@ -45,99 +44,25 @@ export interface Booking {
 export const sports: Sport[] = [
   {
     id: "sport-1",
-    name: "Swimming",
-    icon: "swim",
-    description: "Indoor and outdoor swimming pools with professional trainers"
+    name: "Box Cricket",
+    icon: "cricket",
+    description: "Box cricket nets with professional coaching"
   },
   {
     id: "sport-2",
-    name: "Badminton",
-    icon: "badminton",
-    description: "Professional badminton courts with equipment rental available"
-  },
-  {
-    id: "sport-3",
-    name: "Basketball",
-    icon: "basketball",
-    description: "Full-size basketball courts with coaching sessions"
-  },
-  {
-    id: "sport-4",
-    name: "Tennis",
-    icon: "tennis",
-    description: "Clay and hard tennis courts with professional trainers"
-  },
-  {
-    id: "sport-5",
-    name: "Cricket",
-    icon: "cricket",
-    description: "Cricket nets and grounds with equipment and coaching"
-  },
-  {
-    id: "sport-6",
-    name: "Football",
+    name: "Box Football",
     icon: "football",
-    description: "Full-size football fields with coaching programs"
+    description: "Box football courts with professional training"
   }
 ];
 
 // Centers data
-export const centers: Center[] = [
-  {
-    id: "center-1",
-    name: "Prashant Academy Bandra",
-    location: "Bandra",
-    city: "Mumbai",
-    address: "24, Hill Road, Bandra West, Mumbai - 400050",
-    sports: ["sport-1", "sport-2", "sport-3"],
-    image: "https://images.unsplash.com/photo-1518005020951-eccb494ad742"
-  },
-  {
-    id: "center-2",
-    name: "Prashant Academy Powai",
-    location: "Powai",
-    city: "Mumbai",
-    address: "Central Avenue, Hiranandani Gardens, Powai, Mumbai - 400076",
-    sports: ["sport-2", "sport-4", "sport-5"],
-    image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625"
-  },
-  {
-    id: "center-3",
-    name: "Prashant Academy Andheri",
-    location: "Andheri",
-    city: "Mumbai",
-    address: "JVPD Scheme, Andheri West, Mumbai - 400049",
-    sports: ["sport-1", "sport-3", "sport-6"],
-    image: "https://images.unsplash.com/photo-1518005020951-eccb494ad742"
-  },
-  {
-    id: "center-4",
-    name: "Prashant Academy Juhu",
-    location: "Juhu",
-    city: "Mumbai",
-    address: "Juhu Beach Road, Juhu, Mumbai - 400049",
-    sports: ["sport-1", "sport-4", "sport-6"],
-    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
-  },
-  {
-    id: "center-5",
-    name: "Prashant Academy Dadar",
-    location: "Dadar",
-    city: "Mumbai",
-    address: "Shivaji Park, Dadar West, Mumbai - 400028",
-    sports: ["sport-2", "sport-3", "sport-5"],
-    image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625"
-  },
-  {
-    id: "center-6",
-    name: "Prashant Academy Pune Central",
-    location: "Koregaon Park",
-    city: "Pune",
-    address: "North Main Road, Koregaon Park, Pune - 411001",
-    sports: ["sport-1", "sport-2", "sport-3", "sport-4"],
-    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
-  }
-];
+export const centers: Center[] = centers.map(center => ({
+  ...center,
+  sports: center.sports.filter(sportId => 
+    ['sport-1', 'sport-2'].includes(sportId)
+  )
+}));
 
 // Generate time slots for the current and next 7 days
 export const generateTimeSlots = (): TimeSlot[] => {
