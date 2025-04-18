@@ -1,4 +1,3 @@
-
 import { PageHeader } from "@/components/ui/page-header";
 import { SportCard } from "@/components/sport-card";
 import { VenueCard } from "@/components/venue-card";
@@ -12,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Sport, Venue } from "@/types/venue";
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { FloatingQuotes } from "@/components/floating-quotes";
 
 export default function Home() {
   const { user } = useAuth();
@@ -143,6 +143,8 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      <FloatingQuotes />
     </div>
   );
 }
