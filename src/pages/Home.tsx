@@ -49,6 +49,7 @@ export default function Home() {
 
     // Set the image URLs
     setImageUrls([
+      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/4d41bb1318a39d2fde8d260ba6876350.jpg",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/5f51a1cee2aa31d69aad953432b9f088.jpg",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/9e730ba6b383eafb35b15c2524847618.jpg",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/6981d74e2d19d121230385a62616534c.jpg"
@@ -67,8 +68,18 @@ export default function Home() {
   return (
     <div className="space-y-12 pb-8">
       <SportBackground>
-        <section className="py-24 px-4 md:px-8 rounded-3xl bg-gradient-to-r from-sports-blue to-sports-blue/80 text-white shadow-lg transition-all hover:shadow-xl">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
+        <section className="py-24 px-4 md:px-8 rounded-3xl bg-gradient-to-r from-sports-blue to-sports-blue/80 text-white shadow-lg transition-all hover:shadow-xl relative">
+          {/* Changing Banner Image */}
+          <div className="absolute inset-0">
+            <img 
+              src={imageUrls[currentImageIndex]}  // Dynamically changing image
+              alt="sports action" 
+              className="w-full h-full object-cover rounded-3xl shadow-lg"
+            />
+          </div>
+
+          {/* Text Overlaid on Banner */}
+          <div className="relative z-10 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
             <div className="text-center md:text-left md:max-w-2xl">
               <h1 className="text-5xl md:text-6xl font-extrabold mb-6 animate-fade-in leading-tight tracking-tight uppercase">
                 Book Your Turf. Rule Your Game.
@@ -85,13 +96,6 @@ export default function Home() {
                   <ArrowRightIcon className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-            </div>
-            <div className="hidden md:block">
-              <img 
-                src={imageUrls[currentImageIndex]}  // Dynamically changing image
-                alt="sports action" 
-                className="rounded-3xl shadow-lg w-[400px] h-auto object-cover"
-              />
             </div>
           </div>
         </section>
@@ -173,4 +177,5 @@ export default function Home() {
     </div>
   );
 }
+
 
