@@ -53,215 +53,45 @@ export default function Booking() {
         setError(null);
         console.log("Fetching slot with ID:", slotId);
         
-        // First, check if this is a temp ID (for newly generated slots)
-        if (slotId.startsWith('temp-')) {
-          // Extract details from the temp ID - handle dashes in UUIDs properly
-          const tempParts = slotId.split('-');
-          if (tempParts.length < 6) {
-            throw new Error("Invalid temporary slot ID format");
-          }
-          
-          // Extract the venue ID and sport ID
-          // Format: temp-venueID-sportID-date-time
-          let venueIdParts = [];
-          let sportIdParts = [];
-          let dateIndex = 0;
-          
-          // UUID format has 5 sections separated by dashes (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
-          // First UUID starts at index 1 (after "temp-")
-          for (let i = 1; i < tempParts.length - 2; i++) {
-            // Try to extract venue ID first (assuming it's the first UUID after "temp-")
-            if (venueIdParts.length < 5) {
-              venueIdParts.push(tempParts[i]);
-              if (venueIdParts.length === 5) {
-                dateIndex = i + 1; // Mark where we expect to find the sport ID
-              }
-            }
-            // Then extract sport ID (which comes after venue ID)
-            else if (sportIdParts.length < 5) {
-              sportIdParts.push(tempParts[i]);
-              if (sportIdParts.length === 5) {
-                dateIndex = i + 1; // Mark where we expect to find the date
-              }
-            }
-          }
-          
-          // Reconstruct UUIDs
-          const venueId = venueIdParts.join('-');
-          const sportId = sportIdParts.join('-');
-          
-          // Extract date and time - date is the second to last part, time is the last part
-          const date = tempParts[tempParts.length - 2];
-          const time = tempParts[tempParts.length - 1];
-          
-          console.log("Extracted venue ID:", venueId);
-          console.log("Extracted sport ID:", sportId);
-          console.log("Date:", date);
-          console.log("Time:", time);
-          
-          // Validate extracted data
-          if (!venueId || !sportId || !date || !time) {
-            throw new Error("Failed to extract slot details from ID");
-          }
-          
-          // Get venue info
-          const { data: venueData, error: venueError } = await supabase
-            .from('venues')
-            .select('*')
-            .eq('id', venueId)
-            .single();
-          
-          if (venueError) throw venueError;
-          
-          // Get sport info
-          const { data: sportData, error: sportError } = await supabase
-            .from('sports')
-            .select('*')
-            .eq('id', sportId)
-            .single();
-          
-          if (sportError) throw sportError;
-          
-          // Create slot object from temp ID
-          // Safely calculate end time
-          let endTime;
-          try {
-            // Parse the time string into a Date object (using a dummy date)
-            const timeObj = parse(time, 'HH:mm:ss', new Date());
-            // Add 30 minutes
-            timeObj.setMinutes(timeObj.getMinutes() + 30);
-            // Format back to string
-            endTime = format(timeObj, 'HH:mm:ss');
-          } catch (timeError) {
-            console.error("Time parsing error:", timeError);
-            // Fallback simple calculation for end time
-            const [hours, minutes] = time.split(':').map(Number);
-            const endMinutes = (minutes + 30) % 60;
-            const endHours = hours + Math.floor((minutes + 30) / 60);
-            endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:00`;
-          }
-          
-          const tempSlot: Slot = {
-            id: slotId,
-            venue_id: venueId,
-            sport_id: sportId,
-            date: date,
-            start_time: time,
-            end_time: endTime,
-            price: 0, // Will be determined later
-            available: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          
-          setSlot(tempSlot);
-          setVenue(venueData);
-          setSport(sportData);
-          
-          // Determine price based on venue pricing rules
-          const { data: pricingData, error: pricingError } = await supabase
-            .from('venue_pricing')
-            .select('*')
-            .eq('venue_id', venueId);
-          
-          if (pricingError) throw pricingError;
-          
-          // Default price if no pricing rules match
-          let price = 500;
-          
-          if (pricingData && pricingData.length > 0) {
-            // Try to determine the day of week from the date
-            let dayOfWeek;
-            try {
-              // Parse the date string into a Date object
-              // Make sure the date is in YYYY-MM-DD format for parsing
-              const dateObj = new Date(`${date}T00:00:00`);
-              if (!isNaN(dateObj.getTime())) {
-                dayOfWeek = format(dateObj, 'EEEE').toLowerCase();
-              }
-            } catch (dateError) {
-              console.error("Error parsing date:", dateError);
-              // Continue with default price if date parsing fails
-            }
-
-            if (dayOfWeek) {
-              // Determine if morning or evening based on time
-              const hourNum = parseInt(time.split(':')[0], 10);
-              const isMorning = hourNum < 12;
-              
-              // Filter by morning/evening
-              const filteredPricing = pricingData.filter(p => p.is_morning === isMorning);
-              
-              // First try day-specific pricing
-              const daySpecificPricing = filteredPricing.find(p => p.day_group.toLowerCase() === dayOfWeek);
-              if (daySpecificPricing) {
-                price = daySpecificPricing.price;
-              } else {
-                // Day group (weekday vs weekend)
-                const isWeekend = ['friday', 'saturday', 'sunday'].includes(dayOfWeek);
-                
-                if (isWeekend) {
-                  const pricing = filteredPricing.find(p => p.day_group === 'friday-sunday');
-                  if (pricing) price = pricing.price;
-                } else {
-                  const pricing = filteredPricing.find(p => p.day_group === 'monday-thursday');
-                  if (pricing) price = pricing.price;
-                }
-                
-                // Fallback to general pricing
-                if (price === 500) {
-                  const generalPricing = filteredPricing.find(p => p.day_group === 'monday-sunday');
-                  if (generalPricing) price = generalPricing.price;
-                }
-              }
-            }
-          }
-          
-          // Update slot with determined price
-          tempSlot.price = price;
-          setSlot({...tempSlot});
-        } else {
-          // For non-temp IDs, try fetching directly from the database
-          console.log("Fetching regular slot from database");
-          const { data: slotData, error: slotError } = await supabase
-            .from('slots')
-            .select('*')
-            .eq('id', slotId)
-            .single();
-          
-          if (slotError) {
-            console.error("Slot fetch error:", slotError);
-            throw slotError;
-          }
-          
-          if (!slotData.available) {
-            toast.error("This slot is not available for booking");
-            navigate("/slots");
-            return;
-          }
-          
-          setSlot(slotData);
-          
-          // Get venue info
-          const { data: venueData, error: venueError } = await supabase
-            .from('venues')
-            .select('*')
-            .eq('id', slotData.venue_id)
-            .single();
-          
-          if (venueError) throw venueError;
-          setVenue(venueData);
-          
-          // Get sport info
-          const { data: sportData, error: sportError } = await supabase
-            .from('sports')
-            .select('*')
-            .eq('id', slotData.sport_id)
-            .single();
-          
-          if (sportError) throw sportError;
-          setSport(sportData);
+        // Fetch the slot from the database
+        const { data: slotData, error: slotError } = await supabase
+          .from('slots')
+          .select('*')
+          .eq('id', slotId)
+          .single();
+        
+        if (slotError) {
+          console.error("Slot fetch error:", slotError);
+          throw new Error("Could not find the selected slot. It may have been removed.");
         }
+        
+        if (!slotData.available) {
+          toast.error("This slot is not available for booking");
+          navigate("/slots");
+          return;
+        }
+        
+        setSlot(slotData);
+        
+        // Get venue info
+        const { data: venueData, error: venueError } = await supabase
+          .from('venues')
+          .select('*')
+          .eq('id', slotData.venue_id)
+          .single();
+        
+        if (venueError) throw venueError;
+        setVenue(venueData);
+        
+        // Get sport info
+        const { data: sportData, error: sportError } = await supabase
+          .from('sports')
+          .select('*')
+          .eq('id', slotData.sport_id)
+          .single();
+        
+        if (sportError) throw sportError;
+        setSport(sportData);
       } catch (error: any) {
         console.error("Error fetching slot:", error);
         setError(error.message || "Failed to load booking details");
@@ -345,7 +175,7 @@ export default function Booking() {
         user_id: user.id,
         venue_id: venue.id,
         sport_id: sport.id,
-        slot_id: slot.id.startsWith('temp-') ? null : slot.id,
+        slot_id: slot.id,
         slot_time: slotDateTime,
         status: 'confirmed',
         full_name: name,
@@ -375,13 +205,11 @@ export default function Booking() {
       
       console.log("Booking created successfully:", data);
       
-      // If this is a real slot (not temporary), update its availability
-      if (!slot.id.startsWith('temp-')) {
-        await supabase
-          .from('slots')
-          .update({ available: false })
-          .eq('id', slot.id);
-      }
+      // Update slot availability
+      await supabase
+        .from('slots')
+        .update({ available: false })
+        .eq('id', slot.id);
       
       toast.success("Booking confirmed! You'll receive details on your phone.");
       navigate("/booking-success");

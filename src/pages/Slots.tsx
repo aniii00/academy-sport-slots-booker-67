@@ -138,12 +138,15 @@ export default function Slots() {
         } else {
           console.log("No existing slots found, generating new ones");
           
-          // Generate slots in memory first
-          const generatedSlots = await generateSlotsInMemory(selectedVenue.id, selectedSport.id, date);
+          // Generate slots for this venue, sport, and date
+          const generatedSlots = await generateSlotsForVenueAndDate(
+            selectedVenue.id, 
+            selectedSport.id, 
+            formattedDate
+          );
           
-          if (generatedSlots.length > 0) {
-            // Save the generated slots
-            await saveGeneratedSlots(generatedSlots, selectedVenue.id, selectedSport.id, formattedDate);
+          if (generatedSlots && generatedSlots.length > 0) {
+            setSlots(generatedSlots);
           } else {
             setSlots([]);
           }
@@ -157,12 +160,15 @@ export default function Slots() {
     fetchSlots();
   }, [selectedVenue, selectedSport, date]);
   
-  // Generate slots in memory without saving
-  const generateSlotsInMemory = async (venueId: string, sportId: string, selectedDate: Date) => {
+  const generateSlotsForVenueAndDate = async (
+    venueId: string, 
+    sportId: string, 
+    formattedDate: string
+  ): Promise<Slot[]> => {
     try {
-      const dayOfWeek = format(selectedDate, 'EEEE').toLowerCase();
-      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      const dayOfWeek = format(new Date(formattedDate), 'EEEE').toLowerCase();
       
+      // Get venue timings for this day
       const { data: timingsData, error: timingsError } = await supabase
         .from('venue_timings')
         .select('*')
@@ -172,10 +178,11 @@ export default function Slots() {
       if (timingsError) throw timingsError;
       
       if (!timingsData || timingsData.length === 0) {
-        toast.info(`No timings available for ${format(selectedDate, 'EEEE')}`);
+        toast.info(`No timings available for ${format(new Date(formattedDate), 'EEEE')}`);
         return [];
       }
       
+      // Get venue pricing
       const { data: pricingData, error: pricingError } = await supabase
         .from('venue_pricing')
         .select('*')
@@ -188,7 +195,8 @@ export default function Slots() {
         return [];
       }
       
-      const generatedSlots: Omit<Slot, 'id'>[] = [];
+      // Generate slots based on timings
+      const slotsToInsert: Omit<Slot, 'id'>[] = [];
       
       for (const timing of timingsData) {
         const startTime = new Date(`1970-01-01T${timing.start_time}`);
@@ -205,9 +213,10 @@ export default function Slots() {
           currentTime.setMinutes(currentTime.getMinutes() + 30);
           const slotEndTime = format(currentTime, 'HH:mm:00');
           
+          // Determine price based on time and day
           const price = getSlotPrice(pricingData, dayOfWeek, slotStartTime, timing.is_morning);
           
-          generatedSlots.push({
+          slotsToInsert.push({
             venue_id: venueId,
             sport_id: sportId,
             date: formattedDate,
@@ -221,76 +230,59 @@ export default function Slots() {
         }
       }
       
-      return generatedSlots;
-    } catch (error) {
-      console.error("Error generating slots in memory:", error);
-      toast.error("Failed to generate slots");
-      return [];
-    }
-  };
-  
-  // Save the generated slots to the database
-  const saveGeneratedSlots = async (
-    generatedSlots: Omit<Slot, 'id'>[],
-    venueId: string,
-    sportId: string,
-    formattedDate: string
-  ) => {
-    try {
-      console.log("Saving generated slots to database:", generatedSlots);
-      
-      if (generatedSlots.length === 0) {
-        return;
+      // Save generated slots to database
+      if (slotsToInsert.length === 0) {
+        return [];
       }
       
-      // Insert slots in smaller batches to avoid potential issues
-      const batchSize = 10;
-      let successfulInserts = false;
+      // Insert slots in batches to avoid request size limits
+      const BATCH_SIZE = 5;
+      const insertedSlots: Slot[] = [];
+      let insertError = false;
       
-      for (let i = 0; i < generatedSlots.length; i += batchSize) {
-        const batch = generatedSlots.slice(i, i + batchSize);
+      for (let i = 0; i < slotsToInsert.length; i += BATCH_SIZE) {
+        const batch = slotsToInsert.slice(i, i + BATCH_SIZE);
         
-        const { data: insertedSlots, error: insertError } = await supabase
+        const { data, error } = await supabase
           .from('slots')
           .insert(batch)
           .select();
         
-        if (insertError) {
-          console.error("Error inserting slots:", insertError);
-          toast.error("Failed to save some slots");
-        } else {
-          console.log("Successfully inserted slots:", insertedSlots);
-          successfulInserts = true;
+        if (error) {
+          console.error("Error inserting slot batch:", error);
+          insertError = true;
+        } else if (data) {
+          insertedSlots.push(...data);
         }
       }
       
-      // Fetch all the slots after insertion
-      if (successfulInserts) {
-        const { data: newSlots, error: fetchError } = await supabase
-          .from('slots')
-          .select('*')
-          .eq('venue_id', venueId)
-          .eq('sport_id', sportId)
-          .eq('date', formattedDate);
-          
-        if (fetchError) {
-          console.error("Error fetching newly created slots:", fetchError);
-        } else {
-          console.log("Fetched newly created slots:", newSlots);
-          setSlots(newSlots || []);
-          return;
-        }
+      if (insertError) {
+        toast.error("Failed to save some slots");
       }
       
-      // If we couldn't save or fetch the slots properly, at least display something
-      setSlots(generatedSlots.map((slot, index) => ({ 
-        ...slot, 
-        id: `temp-${index}` 
-      })) as Slot[]);
+      // If we have inserted slots, return them
+      if (insertedSlots.length > 0) {
+        return insertedSlots;
+      }
+      
+      // If insertion failed but we generated slots, fetch what was inserted
+      const { data: fetchedSlots, error: fetchError } = await supabase
+        .from('slots')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('sport_id', sportId)
+        .eq('date', formattedDate);
+      
+      if (fetchError) {
+        throw fetchError;
+      }
+      
+      return fetchedSlots || [];
       
     } catch (error) {
-      console.error("Error saving generated slots:", error);
-      toast.error("Failed to save slots for this date");
+      console.error("Error generating slots:", error);
+      toast.error("Failed to generate slots for this date");
+      return [];
     }
   };
   

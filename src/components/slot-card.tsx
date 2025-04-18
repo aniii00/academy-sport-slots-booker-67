@@ -99,9 +99,9 @@ export function SlotCard({ slot, className }: SlotCardProps) {
     formattedDate = slot.date;
   }
 
-  // Create a safe booking URL with properly encoded parameters
-  const slotId = encodeURIComponent(slot.id);
-  const bookingUrl = `/booking?slotId=${slotId}`;
+  // Create a booking URL with properly encoded parameters
+  // If it's a database slot, use the ID directly
+  const bookingUrl = `/booking?slotId=${encodeURIComponent(slot.id)}`;
 
   return (
     <Card 
