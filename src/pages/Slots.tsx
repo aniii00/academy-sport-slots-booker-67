@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { format, addDays } from "date-fns";
+import { format, addDays, parse, addMinutes } from "date-fns";
 import { PageHeader } from "@/components/ui/page-header";
 import { SlotCard } from "@/components/slot-card";
 import { Calendar } from "@/components/ui/calendar";
@@ -289,7 +288,7 @@ export default function Slots() {
     try {
       const dayOfWeek = format(new Date(formattedDate), 'EEEE').toLowerCase();
       
-      // Get venue timings for this day
+      // Fetch venue-specific timings
       const { data: timingsData, error: timingsError } = await supabase
         .from('venue_timings')
         .select('*')
@@ -298,12 +297,35 @@ export default function Slots() {
       
       if (timingsError) throw timingsError;
       
+      // If no timings found, create default timings for this venue and day
       if (!timingsData || timingsData.length === 0) {
-        toast.info(`No timings available for ${format(new Date(formattedDate), 'EEEE')}`);
-        return [];
+        const defaultTimings = [
+          {
+            venue_id: venueId,
+            day_of_week: dayOfWeek,
+            start_time: '06:00:00',
+            end_time: '12:00:00',
+            is_morning: true
+          },
+          {
+            venue_id: venueId,
+            day_of_week: dayOfWeek,
+            start_time: '12:00:00',
+            end_time: '23:00:00',
+            is_morning: false
+          }
+        ];
+        
+        const { error: insertTimingsError } = await supabase
+          .from('venue_timings')
+          .insert(defaultTimings);
+        
+        if (insertTimingsError) throw insertTimingsError;
+        
+        timingsData.push(...defaultTimings);
       }
       
-      // Get venue pricing
+      // Fetch venue pricing
       const { data: pricingData, error: pricingError } = await supabase
         .from('venue_pricing')
         .select('*')
@@ -311,30 +333,42 @@ export default function Slots() {
       
       if (pricingError) throw pricingError;
       
+      // If no pricing found, create default pricing
       if (!pricingData || pricingData.length === 0) {
-        toast.error("No pricing information available");
-        return [];
+        const defaultPricing = [
+          {
+            venue_id: venueId,
+            day_group: 'monday-sunday',
+            time_range: '6-23',
+            is_morning: true,
+            price: 500,
+            per_duration: '30 minutes'
+          }
+        ];
+        
+        const { error: insertPricingError } = await supabase
+          .from('venue_pricing')
+          .insert(defaultPricing);
+        
+        if (insertPricingError) throw insertPricingError;
+        
+        pricingData.push(...defaultPricing);
       }
       
-      // Generate slots based on timings
+      // Generate slots
       const slotsToInsert: Omit<Slot, 'id'>[] = [];
       
       for (const timing of timingsData) {
-        const startTime = new Date(`1970-01-01T${timing.start_time}`);
-        const endTime = new Date(`1970-01-01T${timing.end_time}`);
+        const startTime = parse(timing.start_time, 'HH:mm:ss', new Date());
+        const endTime = parse(timing.end_time, 'HH:mm:ss', new Date());
         
-        if (endTime <= startTime) {
-          endTime.setDate(endTime.getDate() + 1);
-        }
-        
-        let currentTime = new Date(startTime);
+        let currentTime = startTime;
         while (currentTime < endTime) {
-          const slotStartTime = format(currentTime, 'HH:mm:00');
+          const slotStartTime = format(currentTime, 'HH:mm:ss');
           
-          currentTime.setMinutes(currentTime.getMinutes() + 30);
-          const slotEndTime = format(currentTime, 'HH:mm:00');
+          currentTime = addMinutes(currentTime, 30);
+          const slotEndTime = format(currentTime, 'HH:mm:ss');
           
-          // Determine price based on time and day
           const price = getSlotPrice(pricingData, dayOfWeek, slotStartTime, timing.is_morning);
           
           slotsToInsert.push({
@@ -351,15 +385,13 @@ export default function Slots() {
         }
       }
       
-      // Save generated slots to database
       if (slotsToInsert.length === 0) {
         return [];
       }
       
-      // Insert slots in batches to avoid request size limits
-      const BATCH_SIZE = 5;
+      // Insert slots in batches
+      const BATCH_SIZE = 10;
       const insertedSlots: Slot[] = [];
-      let insertError = false;
       
       for (let i = 0; i < slotsToInsert.length; i += BATCH_SIZE) {
         const batch = slotsToInsert.slice(i, i + BATCH_SIZE);
@@ -370,21 +402,17 @@ export default function Slots() {
           .select();
         
         if (error) {
-          console.error("Error inserting slot batch:", error);
-          insertError = true;
+          console.error("Slot insertion error:", error);
+          toast.error("Failed to generate some slots");
         } else if (data) {
           insertedSlots.push(...data);
         }
       }
       
-      if (insertError) {
-        toast.error("Failed to save some slots");
-      }
-      
       return insertedSlots;
     } catch (error) {
-      console.error("Error generating slots:", error);
-      toast.error("Failed to generate slots for this date");
+      console.error("Slot generation error:", error);
+      toast.error("Failed to generate slots");
       return [];
     }
   };
