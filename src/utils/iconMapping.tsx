@@ -7,7 +7,6 @@ import {
   MapPin,
   Calendar,
   Clock,
-  CircleDollarSign,
   User,
   Phone,
   Filter,
@@ -25,7 +24,8 @@ import {
   Check,
   X,
   ArrowLeft,
-  BarChart 
+  BarChart, 
+  IndianRupee
 } from "lucide-react";
 
 // Map sport names to icons
@@ -47,7 +47,7 @@ export const Sport = (props: any) => <BarChart {...props} />;
 export const LocationIcon = (props: any) => <MapPin {...props} />;
 export const CalendarIcon = (props: any) => <Calendar {...props} />;
 export const TimeIcon = (props: any) => <Clock {...props} />;
-export const PriceIcon = (props: any) => <CircleDollarSign {...props} />;
+export const PriceIcon = (props: any) => <IndianRupee {...props} />;
 export const UserIcon = (props: any) => <User {...props} />;
 export const PhoneIcon = (props: any) => <Phone {...props} />;
 export const FilterIcon = (props: any) => <Filter {...props} />;

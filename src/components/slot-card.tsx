@@ -118,7 +118,7 @@ export function SlotCard({ slot, className }: SlotCardProps) {
           </div>
           <div className="flex items-center text-sports-orange font-semibold bg-sports-lightOrange/50 px-3 py-1 rounded-full">
             <PriceIcon className="h-4 w-4 mr-1" />
-            <span>₹{slot.price}</span>
+            <span>{slot.price}</span>
           </div>
         </div>
         
