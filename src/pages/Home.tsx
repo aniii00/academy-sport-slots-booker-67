@@ -1,4 +1,3 @@
-
 import { PageHeader } from "@/components/ui/page-header";
 import { SportCard } from "@/components/sport-card";
 import { VenueCard } from "@/components/venue-card";
@@ -229,10 +228,12 @@ export default function Home() {
           >
             {venues.map((venue) => (
               <ScrollReveal key={venue.id}>
-                <VenueCard 
-                  venue={venue} 
-                  className="transition-all duration-300 hover:scale-105"
-                />
+                <div className="relative overflow-hidden rounded-xl bg-white/10 backdrop-blur-md shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                  <VenueCard 
+                    venue={venue} 
+                    className="transition-all duration-300"
+                  />
+                </div>
               </ScrollReveal>
             ))}
           </motion.div>
