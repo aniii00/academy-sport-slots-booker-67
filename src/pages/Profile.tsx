@@ -62,7 +62,14 @@ export default function Profile() {
       }
 
       console.log("Bookings fetched:", data);
-      setBookings(data || []);
+      
+      // Transform the data to include amount (default to 0 if not present)
+      const bookingsWithAmount = data?.map(booking => ({
+        ...booking,
+        amount: booking.amount || 0
+      })) || [];
+      
+      setBookings(bookingsWithAmount);
     } catch (error: any) {
       console.error("Error fetching bookings:", error);
       setError(error.message);

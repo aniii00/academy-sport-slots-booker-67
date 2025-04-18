@@ -28,7 +28,14 @@ export function BookingsList() {
           .order('created_at', { ascending: false });
         
         if (error) throw error;
-        setBookings(data || []);
+        
+        // Transform the data to include amount (default to 0 if not present)
+        const bookingsWithAmount = data?.map(booking => ({
+          ...booking,
+          amount: booking.amount || 0
+        })) || [];
+        
+        setBookings(bookingsWithAmount);
       } catch (error) {
         console.error("Error fetching bookings:", error);
         toast.error("Failed to load bookings");
@@ -44,11 +51,17 @@ export function BookingsList() {
           { event: '*', schema: 'public', table: 'bookings' },
           (payload) => {
             if (payload.eventType === 'INSERT') {
-              setBookings(prev => [payload.new as Booking, ...prev]);
+              const newBooking = {
+                ...payload.new as Booking,
+                amount: (payload.new as any).amount || 0
+              };
+              setBookings(prev => [newBooking, ...prev]);
             } else if (payload.eventType === 'UPDATE') {
               setBookings(prev => 
                 prev.map(booking => 
-                  booking.id === payload.new.id ? payload.new as Booking : booking
+                  booking.id === payload.new.id ? 
+                  { ...payload.new as Booking, amount: (payload.new as any).amount || 0 } : 
+                  booking
                 )
               );
             }
