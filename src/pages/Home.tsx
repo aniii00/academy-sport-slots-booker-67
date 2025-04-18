@@ -70,7 +70,7 @@ export default function Home() {
 
   return (
     <motion.div 
-      className="space-y-12 pb-8 bg-gray-100"
+      className="space-y-12 pb-8 bg-gray-200"
       initial="hidden"
       animate="visible"
       variants={staggerContainer}
