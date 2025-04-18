@@ -72,7 +72,7 @@ export default function Home() {
             </div>
             <div className="hidden md:block">
               <img 
-                src="https://images.unsplash.com/photo-1613358632412-df6b96e1c0fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                src="https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/98c979d2b6481f1f36fc526e53d10a97.jpg"
                 alt="sports action" 
                 className="rounded-3xl shadow-lg w-[400px] h-auto object-cover"
               />
