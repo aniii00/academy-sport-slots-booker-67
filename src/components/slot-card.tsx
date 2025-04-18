@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface SlotCardProps {
   slot: Slot;
@@ -18,6 +19,7 @@ interface SlotCardProps {
 export function SlotCard({ slot, className }: SlotCardProps) {
   const [venue, setVenue] = useState<Venue | null>(null);
   const [sport, setSport] = useState<Sport | null>(null);
+  const [isBooked, setIsBooked] = useState(!slot.available);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -42,6 +44,27 @@ export function SlotCard({ slot, className }: SlotCardProps) {
         
         if (sportError) throw sportError;
         setSport(sportData);
+        
+        // Subscribe to booking changes for this slot
+        const channel = supabase
+          .channel('slot-updates')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'slots',
+              filter: `id=eq.${slot.id}`
+            },
+            (payload: any) => {
+              setIsBooked(!payload.new.available);
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
       } catch (error) {
         console.error("Error fetching slot details:", error);
         toast.error("Error loading slot details");
@@ -51,7 +74,7 @@ export function SlotCard({ slot, className }: SlotCardProps) {
     };
     
     fetchDetails();
-  }, [slot.venue_id, slot.sport_id]);
+  }, [slot.venue_id, slot.sport_id, slot.id]);
   
   if (isLoading) {
     return (
@@ -68,13 +91,12 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   
   if (!venue || !sport) return null;
   
-  // Format date (safely)
   let formattedDate;
   try {
     formattedDate = format(new Date(slot.date), "EEE, dd MMM yyyy");
   } catch (error) {
     console.error("Date formatting error:", error, slot.date);
-    formattedDate = slot.date; // Fallback to raw date string
+    formattedDate = slot.date;
   }
 
   // Create a safe booking URL with properly encoded parameters
@@ -103,19 +125,21 @@ export function SlotCard({ slot, className }: SlotCardProps) {
           </div>
         </div>
         
-        <Link to={bookingUrl}>
-          <Button 
-            className={cn(
-              "w-full rounded-xl shadow-sm hover:shadow-md",
-              slot.available 
-                ? "bg-gradient-to-r from-sports-blue to-sports-blue/90" 
-                : "bg-gray-200 text-gray-500"
-            )}
-            disabled={!slot.available}
-          >
-            {slot.available ? "Book Now" : "Not Available"}
-          </Button>
-        </Link>
+        <div className="flex justify-between items-center">
+          {isBooked ? (
+            <Badge variant="secondary" className="w-full justify-center py-2 bg-gray-100 text-gray-500">
+              Booked
+            </Badge>
+          ) : (
+            <Link to={bookingUrl} className="w-full">
+              <Button 
+                className="w-full rounded-xl shadow-sm hover:shadow-md bg-gradient-to-r from-sports-blue to-sports-blue/90"
+              >
+                Book Now
+              </Button>
+            </Link>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
