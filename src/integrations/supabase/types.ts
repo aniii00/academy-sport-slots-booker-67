@@ -11,7 +11,6 @@ export type Database = {
     Tables: {
       bookings: {
         Row: {
-          amount: number
           created_at: string
           full_name: string
           id: string
@@ -25,7 +24,6 @@ export type Database = {
           venue_id: string
         }
         Insert: {
-          amount?: number
           created_at?: string
           full_name: string
           id?: string
@@ -39,7 +37,6 @@ export type Database = {
           venue_id: string
         }
         Update: {
-          amount?: number
           created_at?: string
           full_name?: string
           id?: string

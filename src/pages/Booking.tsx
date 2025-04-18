@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { format, parse, parseISO } from "date-fns";
+import { format, parse } from "date-fns";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,6 @@ export default function Booking() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isSlotBooked, setIsSlotBooked] = useState(false);
   
   useEffect(() => {
     if (!user) {
@@ -76,14 +75,14 @@ export default function Booking() {
             if (venueIdParts.length < 5) {
               venueIdParts.push(tempParts[i]);
               if (venueIdParts.length === 5) {
-                dateIndex = i + 1; // Mark where we expect the date to be
+                dateIndex = i + 1; // Mark where we expect to find the sport ID
               }
             }
-            // Then extract sport ID (assuming it's the second UUID)
+            // Then extract sport ID (which comes after venue ID)
             else if (sportIdParts.length < 5) {
               sportIdParts.push(tempParts[i]);
               if (sportIdParts.length === 5) {
-                dateIndex = i + 1; // Update where we expect the date to be
+                dateIndex = i + 1; // Mark where we expect to find the date
               }
             }
           }
@@ -93,7 +92,7 @@ export default function Booking() {
           const sportId = sportIdParts.join('-');
           
           // Extract date and time
-          const date = tempParts[dateIndex];
+          const date = tempParts[tempParts.length - 2];
           const time = tempParts[tempParts.length - 1];
           
           console.log("Extracted venue ID:", venueId);
@@ -124,32 +123,12 @@ export default function Booking() {
           
           if (sportError) throw sportError;
           
-          // Check if this slot is already booked
-          const formattedDate = date.includes('-') ? date : `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
-          const formattedTime = time.includes(':') ? time : `${time.substring(0, 2)}:${time.substring(2, 4)}:${time.length > 4 ? time.substring(4, 6) : '00'}`;
-          const slotDateTime = `${formattedDate}T${formattedTime}`;
-          
-          console.log("Formatted slot datetime:", slotDateTime);
-          
-          const { data: existingBookings, error: bookingsError } = await supabase
-            .from('bookings')
-            .select('*')
-            .eq('venue_id', venueId)
-            .eq('sport_id', sportId)
-            .eq('slot_time', slotDateTime);
-          
-          if (bookingsError) throw bookingsError;
-          
-          if (existingBookings && existingBookings.length > 0) {
-            setIsSlotBooked(true);
-            toast.error("This slot has already been booked");
-          }
-          
-          // Calculate end time safely
+          // Create slot object from temp ID
+          // Safely calculate end time
           let endTime;
           try {
             // Parse the time string into a Date object (using a dummy date)
-            const timeObj = parse(formattedTime, 'HH:mm:ss', new Date());
+            const timeObj = parse(time, 'HH:mm:ss', new Date());
             // Add 30 minutes
             timeObj.setMinutes(timeObj.getMinutes() + 30);
             // Format back to string
@@ -157,7 +136,7 @@ export default function Booking() {
           } catch (timeError) {
             console.error("Time parsing error:", timeError);
             // Fallback simple calculation for end time
-            const [hours, minutes] = formattedTime.split(':').map(Number);
+            const [hours, minutes] = time.split(':').map(Number);
             const endMinutes = (minutes + 30) % 60;
             const endHours = hours + Math.floor((minutes + 30) / 60);
             endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:00`;
@@ -167,11 +146,11 @@ export default function Booking() {
             id: slotId,
             venue_id: venueId,
             sport_id: sportId,
-            date: formattedDate,
-            start_time: formattedTime,
+            date: date,
+            start_time: time,
             end_time: endTime,
             price: 0, // Will be determined later
-            available: !isSlotBooked,
+            available: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
@@ -196,10 +175,9 @@ export default function Booking() {
             let dayOfWeek;
             try {
               // Parse the date string into a Date object
-              const dateObj = parseISO(formattedDate);
+              const dateObj = new Date(date);
               if (!isNaN(dateObj.getTime())) {
                 dayOfWeek = format(dateObj, 'EEEE').toLowerCase();
-                console.log("Day of week:", dayOfWeek);
               }
             } catch (dateError) {
               console.error("Error parsing date:", dateError);
@@ -208,7 +186,7 @@ export default function Booking() {
 
             if (dayOfWeek) {
               // Determine if morning or evening based on time
-              const hourNum = parseInt(formattedTime.split(':')[0], 10);
+              const hourNum = parseInt(time.split(':')[0], 10);
               const isMorning = hourNum < 12;
               
               // Filter by morning/evening
@@ -257,7 +235,6 @@ export default function Booking() {
           }
           
           if (!slotData.available) {
-            setIsSlotBooked(true);
             toast.error("This slot is not available for booking");
             navigate("/slots");
             return;
@@ -285,41 +262,6 @@ export default function Booking() {
           if (sportError) throw sportError;
           setSport(sportData);
         }
-        
-        // Subscribe to booking changes
-        const channel = supabase
-          .channel('booking-slot-updates')
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'bookings',
-            },
-            (payload: any) => {
-              // If this is a temp slot, check if the slot time matches
-              if (slot?.id.startsWith('temp-') && 
-                  payload.new.venue_id === slot.venue_id && 
-                  payload.new.sport_id === slot.sport_id) {
-                  
-                const slotDateTime = `${slot.date}T${slot.start_time}`;
-                if (payload.new.slot_time === slotDateTime) {
-                  setIsSlotBooked(true);
-                  toast.error("This slot was just booked by someone else");
-                }
-              } 
-              // For regular slots, check the slot_id
-              else if (payload.new.slot_id === slotId) {
-                setIsSlotBooked(true);
-                toast.error("This slot was just booked by someone else");
-              }
-            }
-          )
-          .subscribe();
-        
-        return () => {
-          supabase.removeChannel(channel);
-        };
       } catch (error: any) {
         console.error("Error fetching slot:", error);
         setError(error.message || "Failed to load booking details");
@@ -349,11 +291,6 @@ export default function Booking() {
       return;
     }
     
-    if (isSlotBooked) {
-      toast.error("This slot has already been booked");
-      return;
-    }
-    
     if (!name.trim() || !phone.trim()) {
       toast.error("Please fill in all required fields");
       return;
@@ -367,121 +304,48 @@ export default function Booking() {
     setIsSubmitting(true);
     
     try {
-      // Check once more if the slot is available (race condition protection)
-      if (slot.id.startsWith('temp-')) {
-        // For temp slots, check if there are any bookings for this slot time/venue/sport
-        // Make sure the slot time is properly formatted
-        let slotDateTime;
-        try {
-          const dateStr = slot.date.includes('-') 
-            ? slot.date 
-            : `${slot.date.substring(0, 4)}-${slot.date.substring(4, 6)}-${slot.date.substring(6, 8)}`;
-            
-          const timeStr = slot.start_time.includes(':') 
-            ? slot.start_time 
-            : `${slot.start_time.substring(0, 2)}:${slot.start_time.substring(2, 4)}:${slot.start_time.length > 4 ? slot.start_time.substring(4, 6) : '00'}`;
-            
-          slotDateTime = `${dateStr}T${timeStr}`;
-          
-          // Validate the date string
-          const testDate = new Date(slotDateTime);
-          if (isNaN(testDate.getTime())) {
-            throw new Error("Invalid date format");
-          }
-          
-          console.log("Checking slot availability with datetime:", slotDateTime);
-        } catch (error) {
-          console.error("Error formatting date:", error);
-          throw new Error("Invalid date format for booking");
+      // Safely create date object for slot time
+      let slotDateTime;
+      try {
+        // Construct a valid ISO datetime string
+        const dateTimeStr = `${slot.date}T${slot.start_time}`;
+        slotDateTime = new Date(dateTimeStr);
+        
+        // Check if the date is valid
+        if (isNaN(slotDateTime.getTime())) {
+          throw new Error("Invalid date/time value");
         }
-        
-        const { data: existingBookings, error: bookingsCheckError } = await supabase
-          .from('bookings')
-          .select('id')
-          .eq('venue_id', slot.venue_id)
-          .eq('sport_id', slot.sport_id)
-          .eq('slot_time', slotDateTime);
-        
-        if (bookingsCheckError) throw bookingsCheckError;
-        
-        if (existingBookings && existingBookings.length > 0) {
-          setIsSlotBooked(true);
-          toast.error("This slot was just booked by someone else");
-          return;
-        }
-        
-        // Create the booking with the validated datetime
-        const booking = {
-          user_id: user.id,
-          venue_id: venue.id,
-          sport_id: sport.id,
-          slot_id: null, // temp slots don't have a real slot_id
-          slot_time: slotDateTime,
-          status: 'confirmed',
-          full_name: name,
-          phone: phone,
-          amount: slot.price
-        };
-        
-        const { data, error } = await supabase
-          .from('bookings')
-          .insert(booking)
-          .select()
-          .single();
-        
-        if (error) {
-          console.error("Booking error:", error);
-          toast.error("Failed to save booking: " + error.message);
-          return;
-        }
-        
-      } else {
-        // For regular slots, check if the slot is still available
-        const { data: slotData, error: slotCheckError } = await supabase
-          .from('slots')
-          .select('available')
-          .eq('id', slot.id)
-          .single();
-        
-        if (slotCheckError) throw slotCheckError;
-        
-        if (!slotData.available) {
-          setIsSlotBooked(true);
-          toast.error("This slot is no longer available");
-          return;
-        }
-        
-        // Format slot time as an ISO string
-        const slotDate = new Date(`${slot.date}T${slot.start_time}`);
-        if (isNaN(slotDate.getTime())) {
-          throw new Error("Invalid date/time format");
-        }
-        
-        const booking = {
-          user_id: user.id,
-          venue_id: venue.id,
-          sport_id: sport.id,
-          slot_id: slot.id,
-          slot_time: slotDate.toISOString(),
-          status: 'confirmed',
-          full_name: name,
-          phone: phone,
-          amount: slot.price
-        };
-        
-        const { data, error } = await supabase
-          .from('bookings')
-          .insert(booking)
-          .select()
-          .single();
-        
-        if (error) {
-          console.error("Booking error:", error);
-          toast.error("Failed to save booking: " + error.message);
-          return;
-        }
-        
-        // Update slot availability
+      } catch (dateError) {
+        console.error("Date construction error:", dateError);
+        // Fallback: use current time as a last resort
+        slotDateTime = new Date();
+      }
+      
+      const booking = {
+        user_id: user.id,
+        venue_id: venue.id,
+        sport_id: sport.id,
+        slot_id: slot.id.startsWith('temp-') ? null : slot.id,
+        slot_time: slotDateTime.toISOString(),
+        status: 'confirmed',
+        full_name: name,
+        phone: phone
+      };
+      
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert(booking)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Booking error:", error);
+        toast.error("Failed to save booking: " + error.message);
+        return;
+      }
+      
+      // If this is a real slot (not temporary), update its availability
+      if (!slot.id.startsWith('temp-')) {
         await supabase
           .from('slots')
           .update({ available: false })
@@ -492,7 +356,7 @@ export default function Booking() {
       navigate("/booking-success");
     } catch (error: any) {
       console.error("Booking error:", error);
-      toast.error("An unexpected error occurred: " + error.message);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }
@@ -531,23 +395,10 @@ export default function Booking() {
   // Format date with error handling
   let formattedDate;
   try {
-    // Ensure date has correct format (YYYY-MM-DD)
-    const dateStr = slot.date.includes('-') 
-      ? slot.date 
-      : `${slot.date.substring(0, 4)}-${slot.date.substring(4, 6)}-${slot.date.substring(6, 8)}`;
-    
-    // Parse the date string
-    const dateObj = parseISO(dateStr);
-    
-    // Check if date is valid
-    if (isNaN(dateObj.getTime())) {
-      throw new Error("Invalid date");
-    }
-    
-    formattedDate = format(dateObj, "EEEE, MMMM d, yyyy");
+    formattedDate = format(new Date(slot.date), "EEEE, MMMM d, yyyy");
   } catch (dateError) {
-    console.error("Error formatting date:", dateError, slot.date);
-    formattedDate = "Date unavailable";
+    console.error("Error formatting date:", dateError);
+    formattedDate = slot.date; // Fallback to raw date string
   }
   
   return (
@@ -646,9 +497,9 @@ export default function Booking() {
               <Button 
                 type="submit" 
                 className="w-full md:w-auto"
-                disabled={isSubmitting || isSlotBooked}
+                disabled={isSubmitting}
               >
-                {isSubmitting ? "Processing..." : isSlotBooked ? "Already Booked" : "Confirm Booking"}
+                {isSubmitting ? "Processing..." : "Confirm Booking"}
               </Button>
             </CardFooter>
           </form>

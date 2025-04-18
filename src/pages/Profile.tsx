@@ -11,8 +11,8 @@ import { UserIcon, LogOutIcon, RefreshCwIcon, CalendarIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { formatDateForDisplay, formatTimeForDisplay } from "@/utils/dateUtils";
 import type { Booking } from "@/types/booking";
+import { format } from "date-fns";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -64,10 +64,10 @@ export default function Profile() {
       console.log("Bookings fetched:", data);
       
       // Transform the data to include amount (default to 0 if not present)
-      const bookingsWithAmount = (data as Booking[]).map(booking => ({
+      const bookingsWithAmount = (data as any[])?.map(booking => ({
         ...booking,
         amount: booking.amount || 0
-      }));
+      })) || [];
       
       setBookings(bookingsWithAmount);
     } catch (error: any) {
@@ -188,10 +188,10 @@ export default function Profile() {
                             {booking.sports?.name} at {booking.venues?.name}
                           </h4>
                           <p className="text-sm text-gray-600">
-                            {formatDateForDisplay(booking.slot_time)}
+                            {format(new Date(booking.slot_time), 'EEEE, MMMM d, yyyy')}
                           </p>
                           <p className="text-sm text-gray-600">
-                            {formatTimeForDisplay(booking.slot_time)}
+                            {format(new Date(booking.slot_time), 'h:mm a')}
                           </p>
                         </div>
                         <div className="text-right">

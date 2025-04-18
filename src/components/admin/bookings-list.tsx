@@ -4,10 +4,10 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Booking } from "@/types/booking";
 import { toast } from "@/components/ui/sonner";
-import { formatDateForDisplay, formatTimeForDisplay } from "@/utils/dateUtils";
 
 export function BookingsList() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -30,10 +30,10 @@ export function BookingsList() {
         if (error) throw error;
         
         // Transform the data to include amount (default to 0 if not present)
-        const bookingsWithAmount = (data as any[]).map(booking => ({
+        const bookingsWithAmount = (data as any[])?.map(booking => ({
           ...booking,
           amount: booking.amount || 0
-        }));
+        })) || [];
         
         setBookings(bookingsWithAmount);
       } catch (error) {
@@ -79,10 +79,10 @@ export function BookingsList() {
   
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = 
-      (booking.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (booking.phone?.includes(searchTerm) || false) ||
-      (booking.venues?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (booking.sports?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
+      booking.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.phone.includes(searchTerm) ||
+      booking.venues?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.sports?.name.toLowerCase().includes(searchTerm.toLowerCase());
       
     const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
     
@@ -148,16 +148,7 @@ export function BookingsList() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {booking.slot_time ? (
-                    <>
-                      {formatDateForDisplay(booking.slot_time)}
-                      <div className="text-sm text-gray-500">
-                        {formatTimeForDisplay(booking.slot_time)}
-                      </div>
-                    </>
-                  ) : (
-                    "No date provided"
-                  )}
+                  {format(new Date(booking.slot_time), "PPp")}
                 </TableCell>
                 <TableCell>
                   <Badge 

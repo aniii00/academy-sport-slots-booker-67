@@ -6,10 +6,10 @@ import { Link } from "react-router-dom";
 import { Slot, Venue, Sport } from "@/types/venue";
 import { TimeIcon, PriceIcon } from "@/utils/iconMapping";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDateForDisplay, formatSlotDateTime } from "@/utils/dateUtils";
-import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface SlotCardProps {
   slot: Slot;
@@ -25,6 +25,7 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
+        // Get venue info
         const { data: venueData, error: venueError } = await supabase
           .from('venues')
           .select('*')
@@ -34,6 +35,7 @@ export function SlotCard({ slot, className }: SlotCardProps) {
         if (venueError) throw venueError;
         setVenue(venueData);
         
+        // Get sport info
         const { data: sportData, error: sportError } = await supabase
           .from('sports')
           .select('*')
@@ -43,66 +45,8 @@ export function SlotCard({ slot, className }: SlotCardProps) {
         if (sportError) throw sportError;
         setSport(sportData);
         
-        if (slot.id.startsWith('temp-')) {
-          try {
-            // Format the date and time properly
-            const slotDateTime = formatSlotDateTime(slot.date, slot.start_time);
-            
-            if (!slotDateTime) {
-              throw new Error("Invalid date/time format");
-            }
-            
-            const { data: existingBookings, error: bookingsError } = await supabase
-              .from('bookings')
-              .select('*')
-              .eq('venue_id', slot.venue_id)
-              .eq('sport_id', slot.sport_id)
-              .eq('slot_time', slotDateTime);
-            
-            if (bookingsError) throw bookingsError;
-            
-            if (existingBookings && existingBookings.length > 0) {
-              setIsBooked(true);
-            }
-          } catch (error) {
-            console.error("Error checking bookings:", error);
-          }
-        }
-        
-        const bookingChannel = supabase
-          .channel('booking-updates')
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'bookings'
-            },
-            (payload: any) => {
-              if (payload.new && 
-                  payload.new.venue_id === slot.venue_id && 
-                  payload.new.sport_id === slot.sport_id) {
-                  
-                if (slot.id.startsWith('temp-')) {
-                  try {
-                    const slotDateTime = formatSlotDateTime(slot.date, slot.start_time);
-                    
-                    if (slotDateTime && payload.new.slot_time === slotDateTime) {
-                      setIsBooked(true);
-                    }
-                  } catch (error) {
-                    console.error("Error checking slot match:", error);
-                  }
-                } 
-                else if (payload.new.slot_id === slot.id) {
-                  setIsBooked(true);
-                }
-              }
-            }
-          )
-          .subscribe();
-          
-        const slotChannel = supabase
+        // Subscribe to booking changes for this slot
+        const channel = supabase
           .channel('slot-updates')
           .on(
             'postgres_changes',
@@ -113,16 +57,13 @@ export function SlotCard({ slot, className }: SlotCardProps) {
               filter: `id=eq.${slot.id}`
             },
             (payload: any) => {
-              if (!slot.id.startsWith('temp-')) {
-                setIsBooked(!payload.new.available);
-              }
+              setIsBooked(!payload.new.available);
             }
           )
           .subscribe();
 
         return () => {
-          supabase.removeChannel(bookingChannel);
-          supabase.removeChannel(slotChannel);
+          supabase.removeChannel(channel);
         };
       } catch (error) {
         console.error("Error fetching slot details:", error);
@@ -133,7 +74,7 @@ export function SlotCard({ slot, className }: SlotCardProps) {
     };
     
     fetchDetails();
-  }, [slot.venue_id, slot.sport_id, slot.id, slot.date, slot.start_time]);
+  }, [slot.venue_id, slot.sport_id, slot.id]);
   
   if (isLoading) {
     return (
@@ -150,16 +91,15 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   
   if (!venue || !sport) return null;
   
-  // Format the date for display with error handling
-  let formattedDate = "Invalid date";
+  let formattedDate;
   try {
-    // Create a valid ISO date string
-    const isoDateStr = `${slot.date}T00:00:00`;
-    formattedDate = formatDateForDisplay(isoDateStr, "EEE, dd MMM yyyy");
+    formattedDate = format(new Date(slot.date), "EEE, dd MMM yyyy");
   } catch (error) {
     console.error("Date formatting error:", error, slot.date);
+    formattedDate = slot.date;
   }
 
+  // Create a safe booking URL with properly encoded parameters
   const slotId = encodeURIComponent(slot.id);
   const bookingUrl = `/booking?slotId=${slotId}`;
 
