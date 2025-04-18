@@ -1,12 +1,11 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isValid, parse } from "date-fns";
 
 /**
- * Safely formats a date string in ISO format
+ * Safely formats a date string in ISO format without timezone
  * @param date The date string or date parts (YYYY-MM-DD or YYYYMMDD)
  * @param time The time string or time parts (HH:MM:SS, HH:MM, or HHMM)
- * @returns A properly formatted ISO date string or null if invalid
+ * @returns A properly formatted ISO date string without timezone or null if invalid
  */
 export function formatDateTimeToISO(date: string, time: string): string | null {
   try {
@@ -64,17 +63,8 @@ export function formatDateTimeToISO(date: string, time: string): string | null {
       return null;
     }
     
-    // Combine date and time in ISO format
-    const isoString = `${dateStr}T${timeStr}`;
-    
-    // Final validation using Date object
-    const testDate = new Date(isoString);
-    if (isNaN(testDate.getTime())) {
-      console.error("Invalid date/time combination:", isoString);
-      return null;
-    }
-    
-    return isoString;
+    // Return ISO format without timezone
+    return `${dateStr} ${timeStr}`;
   } catch (error) {
     console.error("Error formatting date/time:", error);
     return null;
@@ -83,9 +73,6 @@ export function formatDateTimeToISO(date: string, time: string): string | null {
 
 /**
  * Validates and formats a slot date and time for display or storage
- * @param slotDate The date string (YYYY-MM-DD or YYYYMMDD)
- * @param slotTime The time string (HH:MM:SS, HH:MM, or HHMM)
- * @returns A properly formatted ISO date-time string or null if invalid
  */
 export function formatSlotDateTime(slotDate: string, slotTime: string): string | null {
   return formatDateTimeToISO(slotDate, slotTime);
@@ -93,15 +80,13 @@ export function formatSlotDateTime(slotDate: string, slotTime: string): string |
 
 /**
  * Safely formats a date for display
- * @param dateString The ISO date string to format
- * @param formatString The date-fns format string to use
- * @returns Formatted date string or a fallback message if invalid
  */
 export function formatDateForDisplay(dateString: string | null | undefined, formatString: string = "EEEE, MMMM d, yyyy"): string {
   if (!dateString) return "Date unavailable";
   
   try {
-    const date = parseISO(dateString);
+    // For timestamp without timezone, we can parse directly
+    const date = new Date(dateString);
     if (!isValid(date)) {
       return "Invalid date";
     }
@@ -114,15 +99,13 @@ export function formatDateForDisplay(dateString: string | null | undefined, form
 
 /**
  * Safely formats a time for display
- * @param dateString The ISO date string to extract and format the time from
- * @param formatString The date-fns format string to use
- * @returns Formatted time string or a fallback message if invalid
  */
 export function formatTimeForDisplay(dateString: string | null | undefined, formatString: string = "h:mm a"): string {
   if (!dateString) return "Time unavailable";
   
   try {
-    const date = parseISO(dateString);
+    // For timestamp without timezone, we can parse directly
+    const date = new Date(dateString);
     if (!isValid(date)) {
       return "Invalid time";
     }
