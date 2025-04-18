@@ -104,19 +104,20 @@ export default function Profile() {
     try {
       if (!dateTimeStr) return "Invalid date";
       
-      // Handle 'timestamp without time zone' format from Supabase
-      // First, check if it's in ISO 8601 format (e.g., from database)
-      if (dateTimeStr.includes('T')) {
-        const date = parseISO(dateTimeStr);
+      // If the date comes in Postgres timestamp format (YYYY-MM-DD HH:MM:SS)
+      if (dateTimeStr.includes(' ') && dateTimeStr.includes(':')) {
+        // Split into date and time parts
+        const [datePart] = dateTimeStr.split(' ');
+        // Parse the date part only
+        const date = new Date(`${datePart}T00:00:00`);
         if (!isNaN(date.getTime())) {
           return format(date, 'EEEE, MMMM d, yyyy');
         }
       }
       
-      // If it's in "YYYY-MM-DD HH:MM:SS" format (without T)
-      if (dateTimeStr.includes(' ') && dateTimeStr.length >= 10) {
-        const [datePart] = dateTimeStr.split(' ');
-        const date = new Date(datePart);
+      // If it's in ISO 8601 format with T (e.g., from JavaScript Date)
+      if (dateTimeStr.includes('T')) {
+        const date = parseISO(dateTimeStr);
         if (!isNaN(date.getTime())) {
           return format(date, 'EEEE, MMMM d, yyyy');
         }
@@ -139,22 +140,24 @@ export default function Profile() {
     try {
       if (!dateTimeStr) return "Invalid time";
       
-      // Handle ISO 8601 format (e.g., from database)
-      if (dateTimeStr.includes('T')) {
-        const date = parseISO(dateTimeStr);
-        if (!isNaN(date.getTime())) {
-          return format(date, 'h:mm a');
-        }
-      }
-      
-      // Handle "YYYY-MM-DD HH:MM:SS" format
+      // If the date comes in Postgres timestamp format (YYYY-MM-DD HH:MM:SS)
       if (dateTimeStr.includes(' ') && dateTimeStr.includes(':')) {
+        // Split into date and time parts
         const [, timePart] = dateTimeStr.split(' ');
         if (timePart) {
+          // Handle time format (HH:MM:SS) to 12-hour format
           const [hours, minutes] = timePart.split(':').map(Number);
           const isPM = hours >= 12;
           const displayHours = hours % 12 || 12;
           return `${displayHours}:${String(minutes).padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`;
+        }
+      }
+      
+      // If it's in ISO 8601 format with T (e.g., from JavaScript Date)
+      if (dateTimeStr.includes('T')) {
+        const date = parseISO(dateTimeStr);
+        if (!isNaN(date.getTime())) {
+          return format(date, 'h:mm a');
         }
       }
       
