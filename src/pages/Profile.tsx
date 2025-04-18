@@ -99,59 +99,64 @@ export default function Profile() {
     }
   };
 
-  // Helper function to format dates properly
-  const formatBookingDate = (dateStr: string) => {
+  // Helper function to format dates properly for timestamp without timezone
+  const formatBookingDate = (dateTimeStr: string) => {
     try {
-      // First attempt to parse as ISO string (might have timezone info)
-      let date = parseISO(dateStr);
-      
-      // Check if valid
-      if (!isValid(date)) {
-        // Try parsing as YYYY-MM-DD HH:MM:SS format
-        if (dateStr.includes(' ')) {
-          const [datePart, timePart] = dateStr.split(' ');
-          date = new Date(`${datePart}T${timePart}`);
-        } else {
-          // Last resort - try direct Date constructor
-          date = new Date(dateStr);
+      // Handle specific format for 'timestamp without time zone'
+      // Expected format: 'YYYY-MM-DD HH:MM:SS'
+      if (typeof dateTimeStr === 'string') {
+        // First try parsing directly without timezone
+        const parts = dateTimeStr.split(' ');
+        if (parts.length === 2) {
+          const datePart = parts[0]; // YYYY-MM-DD
+          const date = new Date(datePart);
+          
+          if (!isNaN(date.getTime())) {
+            return format(date, 'EEEE, MMMM d, yyyy');
+          }
+        }
+        
+        // If that fails, try standard date parsing methods
+        const date = new Date(dateTimeStr);
+        if (!isNaN(date.getTime())) {
+          return format(date, 'EEEE, MMMM d, yyyy');
         }
       }
       
-      if (!isValid(date)) {
-        return "Invalid date";
-      }
-      
-      return format(date, 'EEEE, MMMM d, yyyy');
+      return "Invalid date";
     } catch (e) {
-      console.error("Error formatting date:", e);
+      console.error("Error formatting date:", e, dateTimeStr);
       return "Date format error";
     }
   };
   
-  const formatBookingTime = (dateStr: string) => {
+  const formatBookingTime = (dateTimeStr: string) => {
     try {
-      // First attempt to parse as ISO string
-      let date = parseISO(dateStr);
-      
-      // Check if valid
-      if (!isValid(date)) {
-        // Try parsing as YYYY-MM-DD HH:MM:SS format
-        if (dateStr.includes(' ')) {
-          const [datePart, timePart] = dateStr.split(' ');
-          date = new Date(`${datePart}T${timePart}`);
-        } else {
-          // Last resort - try direct Date constructor
-          date = new Date(dateStr);
+      // Handle specific format for 'timestamp without time zone'
+      // Expected format: 'YYYY-MM-DD HH:MM:SS'
+      if (typeof dateTimeStr === 'string') {
+        // Extract time part from the string
+        const parts = dateTimeStr.split(' ');
+        if (parts.length === 2) {
+          const timePart = parts[1]; // HH:MM:SS
+          const [hours, minutes] = timePart.split(':').map(Number);
+          
+          // Format as 12-hour time
+          const isPM = hours >= 12;
+          const displayHours = hours % 12 || 12;
+          return `${displayHours}:${minutes.toString().padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`;
+        }
+        
+        // If that fails, try standard date parsing
+        const date = new Date(dateTimeStr);
+        if (!isNaN(date.getTime())) {
+          return format(date, 'h:mm a');
         }
       }
       
-      if (!isValid(date)) {
-        return "Invalid time";
-      }
-      
-      return format(date, 'h:mm a');
+      return "Invalid time";
     } catch (e) {
-      console.error("Error formatting time:", e);
+      console.error("Error formatting time:", e, dateTimeStr);
       return "Time format error";
     }
   };

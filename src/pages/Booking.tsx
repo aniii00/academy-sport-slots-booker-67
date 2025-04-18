@@ -305,18 +305,28 @@ export default function Booking() {
     
     try {
       // Format the date and time properly for the database
-      // This is for timestamp without timezone format
+      // Properly format the date and time for a timestamp without timezone
+      // Format should be: YYYY-MM-DD HH:MM:SS
       let slotDateTime;
       try {
-        // Properly format the date and time for a timestamp without timezone
-        // Format should be: YYYY-MM-DD HH:MM:SS
         const dateStr = slot.date; // Should be in format YYYY-MM-DD
         const timeStr = slot.start_time; // Should be in format HH:MM:SS
+        
+        // Combine date and time into proper format
         slotDateTime = `${dateStr} ${timeStr}`;
+        
+        // Validate the format to catch potential errors early
+        if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(slotDateTime)) {
+          throw new Error(`Invalid date/time format: ${slotDateTime}`);
+        }
+
+        console.log("Slot date/time for database:", slotDateTime);
       } catch (dateError) {
         console.error("Date construction error:", dateError);
-        // Fallback to current time as a last resort
-        slotDateTime = format(new Date(), 'yyyy-MM-dd HH:mm:ss');
+        // Use current date as fallback
+        const now = new Date();
+        slotDateTime = format(now, 'yyyy-MM-dd HH:mm:ss');
+        console.log("Using fallback date/time:", slotDateTime);
       }
       
       const booking = {
@@ -341,7 +351,13 @@ export default function Booking() {
       
       if (error) {
         console.error("Booking error:", error);
-        toast.error("Failed to save booking: " + error.message);
+        
+        // Check if it's a date/time format error
+        if (error.message.includes("date/time") || error.message.includes("out of range")) {
+          toast.error("Failed to save booking: Invalid date/time format. Please try a different slot.");
+        } else {
+          toast.error("Failed to save booking: " + error.message);
+        }
         return;
       }
       
@@ -395,13 +411,20 @@ export default function Booking() {
     );
   }
   
-  // Format date with error handling
-  let formattedDate;
+  // Format date for display with proper error handling
+  let formattedDate = "Invalid date";
   try {
-    formattedDate = format(new Date(slot.date), "EEEE, MMMM d, yyyy");
+    // Try to parse the date string format 'YYYY-MM-DD'
+    const dateObj = new Date(slot.date); 
+    if (!isNaN(dateObj.getTime())) {
+      formattedDate = format(dateObj, "EEEE, MMMM d, yyyy");
+    } else {
+      // If parsing fails, try a different approach
+      formattedDate = slot.date;
+    }
   } catch (dateError) {
     console.error("Error formatting date:", dateError);
-    formattedDate = slot.date; // Fallback to raw date string
+    formattedDate = slot.date; // Fallback
   }
   
   return (
