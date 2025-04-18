@@ -185,29 +185,35 @@ export default function Slots() {
     fetchSlots();
   }, [selectedVenue, selectedSport, date]);
   
-  // Function to create default venue timings
   const createDefaultVenueTimings = async (venueId: string) => {
     try {
       const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
       const timingsToInsert = [];
+      const now = new Date().toISOString();
       
       for (const day of daysOfWeek) {
         // Morning timing (6 AM to 12 PM)
         timingsToInsert.push({
+          id: crypto.randomUUID(),
           venue_id: venueId,
           day_of_week: day,
           start_time: '06:00:00',
           end_time: '12:00:00',
-          is_morning: true
+          is_morning: true,
+          created_at: now,
+          updated_at: now
         });
         
         // Evening timing (12 PM to 11 PM)
         timingsToInsert.push({
+          id: crypto.randomUUID(),
           venue_id: venueId,
           day_of_week: day,
           start_time: '12:00:00',
           end_time: '23:00:00',
-          is_morning: false
+          is_morning: false,
+          created_at: now,
+          updated_at: now
         });
       }
       
@@ -225,44 +231,56 @@ export default function Slots() {
     }
   };
   
-  // Function to create default venue pricing
   const createDefaultVenuePricing = async (venueId: string) => {
     try {
+      const now = new Date().toISOString();
       const pricingToInsert = [
         // Weekday pricing (Monday-Thursday)
         {
+          id: crypto.randomUUID(),
           venue_id: venueId,
           day_group: 'monday-thursday',
           is_morning: true,
           time_range: '6-12',
           price: 500,
-          per_duration: '30 minutes'
+          per_duration: '30 minutes',
+          created_at: now,
+          updated_at: now
         },
         {
+          id: crypto.randomUUID(),
           venue_id: venueId,
           day_group: 'monday-thursday',
           is_morning: false,
           time_range: '12-23',
           price: 700,
-          per_duration: '30 minutes'
+          per_duration: '30 minutes',
+          created_at: now,
+          updated_at: now
         },
         
         // Weekend pricing (Friday-Sunday)
         {
+          id: crypto.randomUUID(),
           venue_id: venueId,
           day_group: 'friday-sunday',
           is_morning: true,
           time_range: '6-12',
           price: 700,
-          per_duration: '30 minutes'
+          per_duration: '30 minutes',
+          created_at: now,
+          updated_at: now
         },
         {
+          id: crypto.randomUUID(),
           venue_id: venueId,
           day_group: 'friday-sunday',
           is_morning: false,
           time_range: '12-23',
           price: 900,
-          per_duration: '30 minutes'
+          per_duration: '30 minutes',
+          created_at: now,
+          updated_at: now
         }
       ];
       
