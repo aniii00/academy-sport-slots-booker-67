@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format, addDays, parse, addMinutes } from "date-fns";
@@ -317,20 +318,28 @@ export default function Slots() {
       
       // If no timings found, create default timings for this venue and day
       if (!timingsData || timingsData.length === 0) {
+        console.log("No venue timings found, creating default ones");
+        const now = new Date().toISOString();
         const defaultTimings = [
           {
+            id: crypto.randomUUID(),
             venue_id: venueId,
             day_of_week: dayOfWeek,
             start_time: '06:00:00',
             end_time: '12:00:00',
-            is_morning: true
+            is_morning: true,
+            created_at: now,
+            updated_at: now
           },
           {
+            id: crypto.randomUUID(),
             venue_id: venueId,
             day_of_week: dayOfWeek,
             start_time: '12:00:00',
             end_time: '23:00:00',
-            is_morning: false
+            is_morning: false,
+            created_at: now,
+            updated_at: now
           }
         ];
         
@@ -353,14 +362,19 @@ export default function Slots() {
       
       // If no pricing found, create default pricing
       if (!pricingData || pricingData.length === 0) {
+        console.log("No venue pricing found, creating default ones");
+        const now = new Date().toISOString();
         const defaultPricing = [
           {
+            id: crypto.randomUUID(),
             venue_id: venueId,
             day_group: 'monday-sunday',
             time_range: '6-23',
             is_morning: true,
             price: 500,
-            per_duration: '30 minutes'
+            per_duration: '30 minutes',
+            created_at: now,
+            updated_at: now
           }
         ];
         
