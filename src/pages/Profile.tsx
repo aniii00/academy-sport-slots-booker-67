@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
-import { format, isValid, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -102,25 +102,30 @@ export default function Profile() {
   // Helper function to format dates properly for timestamp without timezone
   const formatBookingDate = (dateTimeStr: string) => {
     try {
-      // Handle specific format for 'timestamp without time zone'
-      // Expected format: 'YYYY-MM-DD HH:MM:SS'
-      if (typeof dateTimeStr === 'string') {
-        // First try parsing directly without timezone
-        const parts = dateTimeStr.split(' ');
-        if (parts.length === 2) {
-          const datePart = parts[0]; // YYYY-MM-DD
-          const date = new Date(datePart);
-          
-          if (!isNaN(date.getTime())) {
-            return format(date, 'EEEE, MMMM d, yyyy');
-          }
-        }
-        
-        // If that fails, try standard date parsing methods
-        const date = new Date(dateTimeStr);
+      if (!dateTimeStr) return "Invalid date";
+      
+      // Handle 'timestamp without time zone' format from Supabase
+      // First, check if it's in ISO 8601 format (e.g., from database)
+      if (dateTimeStr.includes('T')) {
+        const date = parseISO(dateTimeStr);
         if (!isNaN(date.getTime())) {
           return format(date, 'EEEE, MMMM d, yyyy');
         }
+      }
+      
+      // If it's in "YYYY-MM-DD HH:MM:SS" format (without T)
+      if (dateTimeStr.includes(' ') && dateTimeStr.length >= 10) {
+        const [datePart] = dateTimeStr.split(' ');
+        const date = new Date(datePart);
+        if (!isNaN(date.getTime())) {
+          return format(date, 'EEEE, MMMM d, yyyy');
+        }
+      }
+      
+      // Last resort - try to parse the entire string
+      const date = new Date(dateTimeStr);
+      if (!isNaN(date.getTime())) {
+        return format(date, 'EEEE, MMMM d, yyyy');
       }
       
       return "Invalid date";
@@ -132,26 +137,31 @@ export default function Profile() {
   
   const formatBookingTime = (dateTimeStr: string) => {
     try {
-      // Handle specific format for 'timestamp without time zone'
-      // Expected format: 'YYYY-MM-DD HH:MM:SS'
-      if (typeof dateTimeStr === 'string') {
-        // Extract time part from the string
-        const parts = dateTimeStr.split(' ');
-        if (parts.length === 2) {
-          const timePart = parts[1]; // HH:MM:SS
-          const [hours, minutes] = timePart.split(':').map(Number);
-          
-          // Format as 12-hour time
-          const isPM = hours >= 12;
-          const displayHours = hours % 12 || 12;
-          return `${displayHours}:${minutes.toString().padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`;
-        }
-        
-        // If that fails, try standard date parsing
-        const date = new Date(dateTimeStr);
+      if (!dateTimeStr) return "Invalid time";
+      
+      // Handle ISO 8601 format (e.g., from database)
+      if (dateTimeStr.includes('T')) {
+        const date = parseISO(dateTimeStr);
         if (!isNaN(date.getTime())) {
           return format(date, 'h:mm a');
         }
+      }
+      
+      // Handle "YYYY-MM-DD HH:MM:SS" format
+      if (dateTimeStr.includes(' ') && dateTimeStr.includes(':')) {
+        const [, timePart] = dateTimeStr.split(' ');
+        if (timePart) {
+          const [hours, minutes] = timePart.split(':').map(Number);
+          const isPM = hours >= 12;
+          const displayHours = hours % 12 || 12;
+          return `${displayHours}:${String(minutes).padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`;
+        }
+      }
+      
+      // Last resort - try to parse the entire string
+      const date = new Date(dateTimeStr);
+      if (!isNaN(date.getTime())) {
+        return format(date, 'h:mm a');
       }
       
       return "Invalid time";

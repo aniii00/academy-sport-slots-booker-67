@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { format, parse } from "date-fns";
+import { format, parse, isValid } from "date-fns";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -304,22 +304,32 @@ export default function Booking() {
     setIsSubmitting(true);
     
     try {
-      // Format the date and time properly for the database
       // Properly format the date and time for a timestamp without timezone
       // Format should be: YYYY-MM-DD HH:MM:SS
       let slotDateTime;
+      
       try {
-        const dateStr = slot.date; // Should be in format YYYY-MM-DD
-        const timeStr = slot.start_time; // Should be in format HH:MM:SS
+        // Make sure we have a valid date and time
+        if (!slot.date || !slot.start_time) {
+          throw new Error("Missing date or time information");
+        }
+        
+        // Ensure date is in YYYY-MM-DD format
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(slot.date)) {
+          throw new Error(`Invalid date format: ${slot.date}`);
+        }
+        
+        const dateStr = slot.date;
+        const timeStr = slot.start_time;
         
         // Combine date and time into proper format
         slotDateTime = `${dateStr} ${timeStr}`;
         
-        // Validate the format to catch potential errors early
+        // Validate the format
         if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(slotDateTime)) {
           throw new Error(`Invalid date/time format: ${slotDateTime}`);
         }
-
+        
         console.log("Slot date/time for database:", slotDateTime);
       } catch (dateError) {
         console.error("Date construction error:", dateError);
@@ -414,17 +424,18 @@ export default function Booking() {
   // Format date for display with proper error handling
   let formattedDate = "Invalid date";
   try {
-    // Try to parse the date string format 'YYYY-MM-DD'
-    const dateObj = new Date(slot.date); 
+    // For the display on the booking page, make sure we parse and format correctly
+    const dateObj = new Date(slot.date);
+    
     if (!isNaN(dateObj.getTime())) {
+      // This formats to: "Saturday, April 19, 2025"
       formattedDate = format(dateObj, "EEEE, MMMM d, yyyy");
     } else {
-      // If parsing fails, try a different approach
-      formattedDate = slot.date;
+      throw new Error(`Unable to parse date: ${slot.date}`);
     }
   } catch (dateError) {
     console.error("Error formatting date:", dateError);
-    formattedDate = slot.date; // Fallback
+    formattedDate = slot.date; // Fallback to the raw date
   }
   
   return (

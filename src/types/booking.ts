@@ -12,7 +12,7 @@ export interface Booking {
   created_at: string;
   updated_at: string;
   amount: number;
-  // Add nested relationships for venues and sports
+  // Nested relationships for venues and sports
   venues?: { 
     name: string;
     [key: string]: any;
