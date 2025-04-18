@@ -10,6 +10,26 @@ const QUOTES = [
     author: "Wayne Gretzky"
   },
   {
+    text: "The more I practice, the luckier I get.",
+    author: "Gary Player"
+  },
+  {
+    text: "Do not let what you cannot do interfere with what you can do.",
+    author: "John Wooden"
+  },
+  {
+    text: "You can't put a limit on anything. The more you dream, the farther you get.",
+    author: "Michael Phelps"
+  },
+  {
+    text: "The only way to prove that you’re a good sport is to lose",
+    author: "Ernie Banks"
+  },
+  {
+    text:"The more difficult the victory, the greater the happiness in winning.",
+    author: "Pelé"
+  },
+  {
     text: "Hard work beats talent when talent doesn't work hard.",
     author: "Tim Notke"
   },
