@@ -1,8 +1,10 @@
+
 import { PageHeader } from "@/components/ui/page-header";
 import { SportCard } from "@/components/sport-card";
 import { VenueCard } from "@/components/venue-card";
 import { SmartRecommendations } from "@/components/smart-recommendations";
 import { Button } from "@/components/ui/button";
+import { AnimatedButton } from "@/components/ui/animated-button";
 import { SportBackground } from "@/components/ui/sport-background";
 import { ArrowRightIcon } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -13,7 +15,8 @@ import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { FloatingQuotes } from "@/components/floating-quotes";
 import { motion } from "framer-motion";
-import { fadeIn, staggerContainer, slideIn, scaleIn } from "@/utils/animations";
+import { fadeIn, staggerContainer, slideIn, scaleIn, magneticButton } from "@/utils/animations";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
 export default function Home() {
   const { user } = useAuth();
@@ -108,15 +111,14 @@ export default function Home() {
               </motion.p>
               <motion.div variants={scaleIn}>
                 <Link to="/venue">
-                  <Button 
+                  <AnimatedButton 
                     size="lg" 
-                    className="rounded-full px-8 py-6 text-lg bg-white text-sports-blue hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    className="rounded-full px-8 py-6 text-lg bg-white text-sports-blue hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300"
+                    animationVariants={magneticButton}
                   >
                     Book Now
                     <ArrowRightIcon className="ml-2 h-5 w-5" />
-                  </Button>
+                  </AnimatedButton>
                 </Link>
               </motion.div>
             </div>
@@ -153,15 +155,14 @@ export default function Home() {
             </motion.p>
           </div>
           <Link to="/venue">
-            <motion.div whileHover="hover" whileTap="tap" variants={magneticButton}>
-              <Button 
-                variant="outline" 
-                className="rounded-full border-sports-orange text-sports-orange hover:bg-sports-orange hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
-              >
-                View All
-                <ArrowRightIcon className="ml-2 h-4 w-4" />
-              </Button>
-            </motion.div>
+            <AnimatedButton 
+              variant="outline" 
+              className="rounded-full border-sports-orange text-sports-orange hover:bg-sports-orange hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
+              animationVariants={magneticButton}
+            >
+              View All
+              <ArrowRightIcon className="ml-2 h-4 w-4" />
+            </AnimatedButton>
           </Link>
         </div>
         
@@ -205,15 +206,14 @@ export default function Home() {
             </motion.p>
           </div>
           <Link to="/venue">
-            <motion.div whileHover="hover" whileTap="tap" variants={magneticButton}>
-              <Button 
-                variant="outline" 
-                className="rounded-full shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105"
-              >
-                View All
-                <ArrowRightIcon className="ml-2 h-4 w-4" />
-              </Button>
-            </motion.div>
+            <AnimatedButton 
+              variant="outline" 
+              className="rounded-full shadow-sm hover:shadow-md transition-all duration-300"
+              animationVariants={magneticButton}
+            >
+              View All
+              <ArrowRightIcon className="ml-2 h-4 w-4" />
+            </AnimatedButton>
           </Link>
         </div>
         {isLoading ? (
@@ -228,11 +228,12 @@ export default function Home() {
             variants={staggerContainer}
           >
             {venues.map((venue) => (
-              <VenueCard 
-                key={venue.id} 
-                venue={venue} 
-                className="transition-all duration-300 hover:scale-105"
-              />
+              <ScrollReveal key={venue.id}>
+                <VenueCard 
+                  venue={venue} 
+                  className="transition-all duration-300 hover:scale-105"
+                />
+              </ScrollReveal>
             ))}
           </motion.div>
         )}

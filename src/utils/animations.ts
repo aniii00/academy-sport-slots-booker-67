@@ -26,7 +26,7 @@ export const scaleIn: Variants = {
   visible: { scale: 1, opacity: 1 }
 };
 
-export const magneticButton = {
+export const magneticButton: Variants = {
   rest: { scale: 1 },
   hover: { scale: 1.1 },
   tap: { scale: 0.95 }
