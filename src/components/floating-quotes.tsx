@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from "react";
-import { Quote } from "lucide-react";
+import { Quote, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const QUOTES = [
   {
@@ -31,6 +31,7 @@ export function FloatingQuotes() {
   const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -47,31 +48,61 @@ export function FloatingQuotes() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-8 left-8 z-50 max-w-sm">
-      <div className={cn(
-        "relative flex items-start gap-3 p-4 pr-12 rounded-2xl shadow-lg backdrop-blur-xl",
-        "bg-white/90 dark:bg-gray-800/90 border border-white/20",
-        "transition-all duration-1000 ease-in-out",
-        isAnimating && "opacity-0 translate-y-2",
-        "hover:shadow-xl"
-      )}>
-        <Quote className="w-5 h-5 mt-1 flex-shrink-0 text-sports-blue" />
+    <div 
+      className={cn(
+        "fixed z-50 w-[90%] max-w-md mx-auto left-0 right-0",
+        isMobile 
+          ? "bottom-4 md:bottom-8" 
+          : "bottom-8 left-8"
+      )}
+    >
+      <div 
+        className={cn(
+          "relative flex items-start gap-3 p-4 pr-12 rounded-2xl shadow-lg",
+          "backdrop-blur-xl border border-white/10",
+          "transition-all duration-1000 ease-in-out",
+          isMobile 
+            ? "bg-[#1A1F2C]/70 text-white" 
+            : "bg-white/90 dark:bg-gray-800/90",
+          isAnimating && "opacity-0 translate-y-2",
+          "hover:shadow-xl"
+        )}
+      >
+        <Quote className={cn(
+          "w-5 h-5 mt-1 flex-shrink-0", 
+          isMobile ? "text-[#9b87f5]" : "text-sports-blue"
+        )} />
         <div>
-          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
+          <p className={cn(
+            "text-sm font-medium mb-1",
+            isMobile ? "text-white/90" : "text-gray-800 dark:text-gray-200"
+          )}>
             {QUOTES[currentQuoteIndex].text}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className={cn(
+            "text-xs",
+            isMobile ? "text-white/70" : "text-gray-500 dark:text-gray-400"
+          )}>
             — {QUOTES[currentQuoteIndex].author}
           </p>
         </div>
         <button
           onClick={() => setIsVisible(false)}
-          className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className={cn(
+            "absolute top-2 right-2 p-1 rounded-full transition-colors",
+            isMobile 
+              ? "hover:bg-white/10" 
+              : "hover:bg-gray-100 dark:hover:bg-gray-700"
+          )}
           aria-label="Dismiss quote"
         >
-          <X className="w-4 h-4 text-gray-400" />
+          <X className={cn(
+            "w-4 h-4", 
+            isMobile ? "text-white/70" : "text-gray-400"
+          )} />
         </button>
       </div>
     </div>
   );
 }
+
