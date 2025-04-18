@@ -153,10 +153,9 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   // Format the date for display with error handling
   let formattedDate = "Invalid date";
   try {
-    const isoDateStr = formatSlotDateTime(slot.date, "00:00:00");
-    if (isoDateStr) {
-      formattedDate = formatDateForDisplay(isoDateStr, "EEE, dd MMM yyyy");
-    }
+    // Create a valid ISO date string
+    const isoDateStr = `${slot.date}T00:00:00`;
+    formattedDate = formatDateForDisplay(isoDateStr, "EEE, dd MMM yyyy");
   } catch (error) {
     console.error("Date formatting error:", error, slot.date);
   }

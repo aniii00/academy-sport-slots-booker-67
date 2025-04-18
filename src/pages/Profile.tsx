@@ -188,10 +188,10 @@ export default function Profile() {
                             {booking.sports?.name} at {booking.venues?.name}
                           </h4>
                           <p className="text-sm text-gray-600">
-                            {formatDateForDisplay(booking.slot_time, "EEE, MMM d, yyyy")}
+                            {formatDateForDisplay(booking.slot_time)}
                           </p>
                           <p className="text-sm text-gray-600">
-                            {formatTimeForDisplay(booking.slot_time, "h:mm a")}
+                            {formatTimeForDisplay(booking.slot_time)}
                           </p>
                         </div>
                         <div className="text-right">

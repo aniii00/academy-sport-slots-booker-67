@@ -150,9 +150,9 @@ export function BookingsList() {
                 <TableCell>
                   {booking.slot_time ? (
                     <>
-                      {formatDateForDisplay(booking.slot_time, "EEE, MMM d, yyyy")}
+                      {formatDateForDisplay(booking.slot_time)}
                       <div className="text-sm text-gray-500">
-                        {formatTimeForDisplay(booking.slot_time, "h:mm a")}
+                        {formatTimeForDisplay(booking.slot_time)}
                       </div>
                     </>
                   ) : (
