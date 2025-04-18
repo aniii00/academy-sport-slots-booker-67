@@ -18,8 +18,12 @@ export default function Home() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [sports, setSports] = useState<Sport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const bannerImages = [
+    "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images//photo_2025-04-18%2016.33.55.jpeg",
+    "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images//9e730ba6b383eafb35b15c2524847618.jpg",
+    "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images//2025-04-18%2016.33.39.jpg",
+  ];
+  const [currentBanner, setCurrentBanner] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,39 +51,27 @@ export default function Home() {
       }
     };
 
-    // Set the image URLs
-    setImageUrls([
-      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/4d41bb1318a39d2fde8d260ba6876350.jpg",
-      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/5f51a1cee2aa31d69aad953432b9f088.jpg",
-      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/9e730ba6b383eafb35b15c2524847618.jpg",
-      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/6981d74e2d19d121230385a62616534c.jpg"
-    ]);
-
     fetchData();
+  }, []);
 
-    // Change the image every 5 seconds
-    const intervalId = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % imageUrls.length); // Cycle through images
-    }, 5000);
-
-    return () => clearInterval(intervalId); // Cleanup on component unmount
-  }, [imageUrls.length]);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBanner((prev) => (prev + 1) % bannerImages.length);
+    }, 4000); // Change every 4 seconds
+    return () => clearInterval(interval);
+  }, [bannerImages.length]);
 
   return (
     <div className="space-y-12 pb-8">
       <SportBackground>
-        <section className="py-24 px-4 md:px-8 rounded-3xl bg-gradient-to-r from-sports-blue to-sports-blue/80 text-white shadow-lg transition-all hover:shadow-xl relative">
-          {/* Changing Banner Image */}
-          <div className="absolute inset-0">
-            <img 
-              src={imageUrls[currentImageIndex]}  // Dynamically changing image
-              alt="sports action" 
-              className="w-full h-full object-cover rounded-3xl shadow-lg"
-            />
-          </div>
-
-          {/* Text Overlaid on Banner */}
-          <div className="relative z-10 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
+        <section className="relative py-24 px-4 md:px-8 rounded-3xl overflow-hidden shadow-lg transition-all hover:shadow-xl">
+          <img
+            src={bannerImages[currentBanner]}
+            alt="sports banner"
+            className="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000"
+          />
+          <div className="absolute inset-0 bg-sports-blue/70 z-10"></div>
+          <div className="relative z-20 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10 text-white">
             <div className="text-center md:text-left md:max-w-2xl">
               <h1 className="text-5xl md:text-6xl font-extrabold mb-6 animate-fade-in leading-tight tracking-tight uppercase">
                 Book Your Turf. Rule Your Game.
@@ -177,5 +169,3 @@ export default function Home() {
     </div>
   );
 }
-
-
