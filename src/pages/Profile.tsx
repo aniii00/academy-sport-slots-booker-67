@@ -99,33 +99,24 @@ export default function Profile() {
     }
   };
 
-  // Updated formatting functions for consistency with the slot-card.tsx and Booking.tsx
-  const formatBookingDate = (dateTimeStr: string) => {
+  // Improved time and date formatting for consistency with the Booking page
+  const formatDate = (dateTimeStr: string) => {
     try {
       if (!dateTimeStr) return "Invalid date";
       
-      // If the date comes in Postgres timestamp format (YYYY-MM-DD HH:MM:SS)
-      if (dateTimeStr.includes(' ') && dateTimeStr.includes(':')) {
-        // Parse the date part as a proper date
-        const [datePart] = dateTimeStr.split(' ');
-        const date = new Date(`${datePart}T00:00:00`);
-        if (!isNaN(date.getTime())) {
-          return format(date, 'EEE, dd MMM yyyy');
-        }
-      }
-      
-      // If it's in ISO 8601 format with T (e.g., from JavaScript Date)
-      if (dateTimeStr.includes('T')) {
-        const date = parseISO(dateTimeStr);
-        if (!isNaN(date.getTime())) {
-          return format(date, 'EEE, dd MMM yyyy');
-        }
-      }
-      
-      // Last resort - try to parse the entire string
-      const date = new Date(dateTimeStr);
+      // Parse the ISO date string
+      const date = parseISO(dateTimeStr);
       if (!isNaN(date.getTime())) {
         return format(date, 'EEE, dd MMM yyyy');
+      }
+      
+      // Fallback for other date formats
+      if (dateTimeStr.includes(' ')) {
+        const [datePart] = dateTimeStr.split(' ');
+        const parsedDate = new Date(`${datePart}T00:00:00`);
+        if (!isNaN(parsedDate.getTime())) {
+          return format(parsedDate, 'EEE, dd MMM yyyy');
+        }
       }
       
       return "Invalid date";
@@ -135,41 +126,60 @@ export default function Profile() {
     }
   };
 
-  const formatBookingTime = (dateTimeStr: string) => {
+  const formatTime = (dateTimeStr: string) => {
     try {
       if (!dateTimeStr) return "Invalid time";
       
-      // If the date comes in Postgres timestamp format (YYYY-MM-DD HH:MM:SS)
+      // Parse the ISO date string
+      const date = parseISO(dateTimeStr);
+      if (!isNaN(date.getTime())) {
+        return format(date, 'hh:mm a'); // 12-hour format with AM/PM
+      }
+      
+      // Handle postgres timestamp format (YYYY-MM-DD HH:MM:SS)
       if (dateTimeStr.includes(' ') && dateTimeStr.includes(':')) {
-        // Split into date and time parts
         const [, timePart] = dateTimeStr.split(' ');
         if (timePart) {
-          // Format time to 12-hour format with AM/PM
-          const date = new Date(`1970-01-01T${timePart}`);
-          if (!isNaN(date.getTime())) {
-            return format(date, 'hh:mm a');
-          }
+          const [hours, minutes] = timePart.split(':').map(Number);
+          const timeDate = new Date();
+          timeDate.setHours(hours, minutes, 0);
+          return format(timeDate, 'hh:mm a');
         }
-      }
-      
-      // If it's in ISO 8601 format with T
-      if (dateTimeStr.includes('T')) {
-        const date = parseISO(dateTimeStr);
-        if (!isNaN(date.getTime())) {
-          return format(date, 'hh:mm a'); // Use lowercase 'hh' for 12-hour format
-        }
-      }
-      
-      // Last resort - try to parse the entire string
-      const date = new Date(dateTimeStr);
-      if (!isNaN(date.getTime())) {
-        return format(date, 'hh:mm a');
       }
       
       return "Invalid time";
     } catch (e) {
       console.error("Error formatting time:", e, dateTimeStr);
       return "Time format error";
+    }
+  };
+
+  // Calculate end time (30 minutes after start time)
+  const calculateEndTime = (dateTimeStr: string) => {
+    try {
+      // Parse the ISO date string
+      const date = parseISO(dateTimeStr);
+      if (!isNaN(date.getTime())) {
+        const endDate = new Date(date.getTime() + 30 * 60 * 1000);
+        return format(endDate, 'hh:mm a');
+      }
+      
+      // Handle postgres timestamp format
+      if (dateTimeStr.includes(' ') && dateTimeStr.includes(':')) {
+        const [datePart, timePart] = dateTimeStr.split(' ');
+        if (timePart) {
+          const [hours, minutes, seconds] = timePart.split(':').map(Number);
+          const timeDate = new Date();
+          timeDate.setHours(hours, minutes, 0);
+          const endTime = new Date(timeDate.getTime() + 30 * 60 * 1000);
+          return format(endTime, 'hh:mm a');
+        }
+      }
+      
+      return "";
+    } catch (e) {
+      console.error("Error calculating end time:", e, dateTimeStr);
+      return "";
     }
   };
 
@@ -254,24 +264,9 @@ export default function Profile() {
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => {
-                  // Get start and end times for display
-                  const startTime = formatBookingTime(booking.slot_time);
-                  
-                  // Calculate end time (assuming 30 minute slots)
-                  let endTimeStr = "";
-                  try {
-                    if (booking.slot_time.includes(' ') && booking.slot_time.includes(':')) {
-                      const [datePart, timePart] = booking.slot_time.split(' ');
-                      const timeDate = new Date(`1970-01-01T${timePart}`);
-                      if (!isNaN(timeDate.getTime())) {
-                        const endTime = new Date(timeDate.getTime() + 30 * 60 * 1000);
-                        endTimeStr = format(endTime, 'hh:mm a');
-                      }
-                    }
-                  } catch (e) {
-                    console.error("Error calculating end time:", e);
-                    endTimeStr = "N/A";
-                  }
+                  const formattedDate = formatDate(booking.slot_time);
+                  const startTime = formatTime(booking.slot_time);
+                  const endTime = calculateEndTime(booking.slot_time);
                   
                   return (
                     <Card key={booking.id} className="bg-gray-50">
@@ -282,10 +277,10 @@ export default function Profile() {
                               {booking.sports?.name} at {booking.venues?.name}
                             </h4>
                             <p className="text-sm text-gray-600">
-                              {formatBookingDate(booking.slot_time)}
+                              {formattedDate}
                             </p>
                             <p className="text-sm text-gray-600">
-                              {startTime} - {endTimeStr}
+                              {startTime} {endTime ? `- ${endTime}` : ''}
                             </p>
                           </div>
                           <div className="text-right">
