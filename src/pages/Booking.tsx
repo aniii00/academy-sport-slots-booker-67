@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Slot, Venue, Sport } from "@/types/venue";
 import type { Booking } from "@/types/booking";
+import { formatDateString } from "@/lib/utils";
 
 export default function Booking() {
   const [searchParams] = useSearchParams();
@@ -148,11 +149,7 @@ export default function Booking() {
           }
         }
         
-        slotDateTime = `${formattedDate} ${slot.start_time}`;
-        
-        if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(slotDateTime)) {
-          throw new Error(`Invalid date/time format: ${slotDateTime}`);
-        }
+        slotDateTime = `${formattedDate}T${slot.start_time}`;
         
         console.log("Slot date/time for database:", slotDateTime);
       } catch (dateError) {
@@ -240,25 +237,7 @@ export default function Booking() {
     );
   }
   
-  let formattedDate = "Invalid date";
-  try {
-    let dateObj;
-    
-    if (typeof slot.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(slot.date)) {
-      dateObj = new Date(`${slot.date}T00:00:00`);
-    } else {
-      dateObj = new Date(slot.date);
-    }
-    
-    if (!isNaN(dateObj.getTime())) {
-      formattedDate = format(dateObj, "EEEE, MMMM d, yyyy");
-    } else {
-      throw new Error(`Unable to parse date: ${slot.date}`);
-    }
-  } catch (dateError) {
-    console.error("Error formatting date:", dateError);
-    formattedDate = String(slot.date);
-  }
+  let formattedDate = formatDateString(`${slot.date}T00:00:00`, "EEEE, MMMM d, yyyy");
   
   return (
     <div>

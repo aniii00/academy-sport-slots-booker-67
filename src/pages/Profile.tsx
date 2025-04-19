@@ -180,10 +180,20 @@ export default function Profile() {
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => {
-                  // Using the standardized utilities for consistent time display
+                  // Log the original slot_time to debug timezone issues
+                  console.log(`Original slot_time for booking ${booking.id}:`, booking.slot_time);
+                  
+                  // Format date and time with consistent timezone handling
                   const formattedDate = formatDateString(booking.slot_time, 'EEE, dd MMM yyyy');
                   const startTime = formatTimeWithTimezone(booking.slot_time);
-                  const endTime = calculateEndTime(booking.slot_time);
+                  const endTime = calculateEndTime(booking.slot_time, 30);
+                  
+                  // Log the formatted times to validate
+                  console.log(`Formatted times for booking ${booking.id}:`, {
+                    formattedDate,
+                    startTime,
+                    endTime,
+                  });
                   
                   return (
                     <Card key={booking.id} className="bg-gray-50">
@@ -197,7 +207,7 @@ export default function Profile() {
                               {formattedDate}
                             </p>
                             <p className="text-sm text-gray-600">
-                              {startTime} {endTime ? `- ${endTime}` : ''}
+                              {startTime} - {endTime}
                             </p>
                           </div>
                           <div className="text-right">

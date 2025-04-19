@@ -1,39 +1,43 @@
 
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { format, parseISO } from "date-fns"
+import { format, parseISO, parse, addMinutes } from "date-fns"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Standardized date formatter that handles different date string formats
+// Consistent date formatter with timezone consideration
 export function formatDateString(dateTimeStr: string, formatPattern: string): string {
   try {
     if (!dateTimeStr) return "Invalid date";
     
-    // Try to parse as ISO date string
+    // Create date object from the original string without manipulation
+    const date = new Date(dateTimeStr);
+    if (!isNaN(date.getTime())) {
+      return format(date, formatPattern);
+    }
+    
+    // Try to parse as ISO date string if above approach failed
     if (dateTimeStr.includes('T')) {
-      const date = parseISO(dateTimeStr);
-      if (!isNaN(date.getTime())) {
-        return format(date, formatPattern);
+      const isoDate = parseISO(dateTimeStr);
+      if (!isNaN(isoDate.getTime())) {
+        return format(isoDate, formatPattern);
       }
     }
     
     // Handle postgres timestamp format (YYYY-MM-DD HH:MM:SS)
     if (dateTimeStr.includes(' ') && dateTimeStr.includes(':')) {
-      const [datePart, timePart] = dateTimeStr.split(' ');
-      const fullDateStr = `${datePart}T${timePart}`;
-      const date = new Date(fullDateStr);
-      if (!isNaN(date.getTime())) {
-        return format(date, formatPattern);
+      try {
+        const [datePart, timePart] = dateTimeStr.split(' ');
+        const fullDateStr = `${datePart}T${timePart}`;
+        const parsedDate = new Date(fullDateStr);
+        if (!isNaN(parsedDate.getTime())) {
+          return format(parsedDate, formatPattern);
+        }
+      } catch (error) {
+        console.error("Error parsing datetime:", error);
       }
-    }
-    
-    // Last resort - try to parse as is
-    const date = new Date(dateTimeStr);
-    if (!isNaN(date.getTime())) {
-      return format(date, formatPattern);
     }
     
     return "Invalid date";
@@ -43,12 +47,12 @@ export function formatDateString(dateTimeStr: string, formatPattern: string): st
   }
 }
 
-// Standardized date formatter specifically for handling timestamps with timezone information
+// Format time consistently with timezone information preserved
 export function formatTimeWithTimezone(dateTimeStr: string): string {
   try {
     if (!dateTimeStr) return "Invalid time";
     
-    // Parse the date considering timezone information
+    // Use the original datetime string without manipulation to preserve timezone
     const date = new Date(dateTimeStr);
     if (!isNaN(date.getTime())) {
       return format(date, 'hh:mm a'); // 12-hour format with AM/PM
@@ -61,12 +65,12 @@ export function formatTimeWithTimezone(dateTimeStr: string): string {
   }
 }
 
-// Calculate end time from a start time (default 30 minutes later)
+// Calculate end time from a start time consistently
 export function calculateEndTime(dateTimeStr: string, durationMinutes: number = 30): string {
   try {
     if (!dateTimeStr) return "";
     
-    // Parse the date considering timezone information
+    // Handle timezone correctly by using the original string
     const date = new Date(dateTimeStr);
     if (!isNaN(date.getTime())) {
       const endDate = new Date(date.getTime() + durationMinutes * 60 * 1000);
