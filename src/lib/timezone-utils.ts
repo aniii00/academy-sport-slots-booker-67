@@ -6,13 +6,20 @@ const IST_TIMEZONE = 'Asia/Kolkata';
 
 /**
  * Converts a date string to IST timezone
- * Handles both UTC timestamps and IST timestamps
+ * Handles UTC timestamps and converts them to IST
  */
 export function convertToIST(dateTimeStr: string) {
   try {
+    // Parse the ISO string to a Date object
     const date = parseISO(dateTimeStr);
+    
     // Convert to IST timezone
     const istDate = toZonedTime(date, IST_TIMEZONE);
+    
+    // Log the conversion for debugging
+    console.log("Original:", dateTimeStr);
+    console.log("Converted to IST:", istDate);
+    
     return istDate;
   } catch (error) {
     console.error('Error converting to IST:', error);
@@ -40,12 +47,14 @@ export function formatTimeIST(timeStr: string) {
 
 /**
  * Format a datetime string to IST display format
- * Converts from UTC to IST if timezone information is present
+ * Uses the timezone information in the input string
  */
 export function formatDateTimeIST(dateTimeStr: string) {
   try {
-    // Use convertToIST to handle the timezone conversion
+    // First convert to IST timezone
     const istDate = convertToIST(dateTimeStr);
+    
+    // Format the date in IST
     return format(istDate, 'EEE, dd MMM yyyy hh:mm a');
   } catch (error) {
     console.error('Error formatting IST datetime:', error);
