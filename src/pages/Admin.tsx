@@ -59,13 +59,13 @@ export default function Admin() {
   return (
     <div className="space-y-8">
       <PageHeader 
-        title={
-          <div className="flex items-center">
-            <Shield className="mr-2 h-8 w-8 text-primary" />
-            Admin Panel
-          </div>
-        } 
+        title="Admin Panel"
         subtitle="Manage bookings, centers, and sports"
+        action={
+          <div className="flex items-center text-primary">
+            <Shield className="mr-2 h-6 w-6" />
+          </div>
+        }
       />
       
       <Card className="bg-green-50 border-green-200 mb-6">
