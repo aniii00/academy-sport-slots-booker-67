@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Quote, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -59,13 +58,13 @@ export function FloatingQuotes() {
       setTimeout(() => {
         setCurrentQuoteIndex((prev) => (prev + 1) % QUOTES.length);
         setIsAnimating(false);
-      }, 500); // Half of the transition duration
-    }, 7000); // Change quote every 7 seconds
+      }, 500);
+    }, 7000);
 
     return () => clearInterval(interval);
   }, []);
 
-  if (!isVisible) return null;
+  if (isMobile || !isVisible) return null;
 
   return (
     <div 
@@ -125,4 +124,3 @@ export function FloatingQuotes() {
     </div>
   );
 }
-
