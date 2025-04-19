@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,7 +64,7 @@ export default function Admin() {
     <div className="space-y-8">
       <PageHeader 
         title="Admin Panel"
-        subtitle="Manage bookings, centers, and sports"
+        subtitle="Manage bookings, venues, and sports"
         action={
           <div className="flex items-center text-primary">
             <ShieldIcon className="mr-2 h-6 w-6" />
@@ -83,7 +84,7 @@ export default function Admin() {
       <Tabs defaultValue="bookings" onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
-          <TabsTrigger value="centers">Centers</TabsTrigger>
+          <TabsTrigger value="centers">Venues</TabsTrigger>
           <TabsTrigger value="sports">Sports</TabsTrigger>
         </TabsList>
         

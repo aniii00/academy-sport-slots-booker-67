@@ -13,7 +13,7 @@ interface CenterCardProps {
 }
 
 export function CenterCard({ center, selectedSportId, className }: CenterCardProps) {
-  // Get sport names for this center
+  // Get sport names for this venue
   const centerSports = center.sports.map(
     sportId => sports.find(s => s.id === sportId)?.name || ""
   ).filter(Boolean);

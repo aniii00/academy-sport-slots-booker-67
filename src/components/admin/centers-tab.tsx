@@ -8,7 +8,7 @@ export function CentersTab() {
   return (
     <div className="rounded-md border">
       <Table>
-        <TableCaption>List of all centers</TableCaption>
+        <TableCaption>List of all venues</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>

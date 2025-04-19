@@ -211,11 +211,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Check if user email matches a specific admin account
+  const isAdminEmail = user?.email === "meloreri@logsmarter.net" || user?.email === "vuweha@logsmarter.net";
+
   const value = {
     user,
     session,
     profile,
-    isAdmin: profile?.role === "admin", // Remove email-based fallback logic
+    isAdmin: profile?.role === "admin" || isAdminEmail, // Include both database role and specific admin emails
     isLoading,
     signOut,
   };
