@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
-import { formatDateTimeIST } from "@/lib/timezone-utils";
+import { formatDateTimeIST, convertToIST } from "@/lib/timezone-utils";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -175,6 +176,8 @@ export default function Profile() {
               <div className="space-y-4">
                 {bookings.map((booking) => {
                   console.log("Original booking time:", booking.slot_time);
+                  const parsedDate = convertToIST(booking.slot_time);
+                  console.log("Parsed date in IST:", parsedDate);
                   const formattedDateTime = formatDateTimeIST(booking.slot_time);
                   console.log("Formatted booking time:", formattedDateTime);
                   
