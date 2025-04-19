@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { BookingsList } from "@/components/admin/bookings-list";
-import { CentersTab } from "@/components/admin/centers-tab";
+import { VenuesTab } from "@/components/admin/centers-tab";
 import { SportsTab } from "@/components/admin/sports-tab";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
@@ -64,7 +64,7 @@ export default function Admin() {
     <div className="space-y-8">
       <PageHeader 
         title="Admin Panel"
-        subtitle="Manage bookings, centers, and sports"
+        subtitle="Manage bookings, venues, and sports"
         action={
           <div className="flex items-center text-primary">
             <Shield className="mr-2 h-6 w-6" />
@@ -84,7 +84,7 @@ export default function Admin() {
       <Tabs defaultValue="bookings" onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
-          <TabsTrigger value="centers">Centers</TabsTrigger>
+          <TabsTrigger value="venues">Venues</TabsTrigger>
           <TabsTrigger value="sports">Sports</TabsTrigger>
         </TabsList>
         
@@ -92,8 +92,8 @@ export default function Admin() {
           <BookingsList />
         </TabsContent>
         
-        <TabsContent value="centers" className="mt-6">
-          <CentersTab />
+        <TabsContent value="venues" className="mt-6">
+          <VenuesTab />
         </TabsContent>
         
         <TabsContent value="sports" className="mt-6">

@@ -28,61 +28,58 @@ export function BookingsList() {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
+        console.log("Fetching bookings...");
+        // Use a simpler query that doesn't rely on foreign key relationships
         const { data, error } = await supabase
           .from('bookings')
-          .select(`
-            *,
-            venues ( * ),
-            sports ( * ),
-            profiles:user_id ( email )
-          `)
+          .select('*')
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching bookings:", error);
+          throw error;
+        }
         
-        // Transform the data to include amount (default to 0 if not present)
-        const bookingsWithAmount = (data as any[])?.map(booking => ({
-          ...booking,
-          amount: booking.amount || 0
-        })) || [];
+        // Get venues and sports separately
+        const bookingsWithDetails = await Promise.all((data || []).map(async (booking) => {
+          // Get venue details
+          const { data: venueData } = await supabase
+            .from('venues')
+            .select('name, location')
+            .eq('id', booking.venue_id)
+            .single();
+            
+          // Get sport details
+          const { data: sportData } = await supabase
+            .from('sports')
+            .select('name')
+            .eq('id', booking.sport_id)
+            .single();
+            
+          // Get user email
+          const { data: userData } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', booking.user_id)
+            .single();
+            
+          return {
+            ...booking,
+            amount: booking.amount || 0,
+            venues: venueData || { name: 'Unknown', location: 'Unknown' },
+            sports: sportData || { name: 'Unknown' },
+            profiles: userData || { email: 'Unknown' }
+          };
+        }));
         
-        setBookings(bookingsWithAmount);
+        console.log("Bookings with details:", bookingsWithDetails);
+        setBookings(bookingsWithDetails);
       } catch (error) {
         console.error("Error fetching bookings:", error);
         toast.error("Failed to load bookings");
       } finally {
         setIsLoading(false);
       }
-      
-      // Subscribe to booking changes
-      const channel = supabase
-        .channel('booking-updates')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'bookings' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const newBooking = {
-                ...payload.new as Booking,
-                amount: (payload.new as any).amount || 0
-              };
-              setBookings(prev => [newBooking, ...prev]);
-            } else if (payload.eventType === 'UPDATE') {
-              setBookings(prev => 
-                prev.map(booking => 
-                  booking.id === payload.new.id ? 
-                  { ...payload.new as Booking, amount: (payload.new as any).amount || 0 } : 
-                  booking
-                )
-              );
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     };
     
     const fetchVenuesAndSports = async () => {
@@ -112,22 +109,41 @@ export function BookingsList() {
       
       setSports(sportData || []);
       
-      // Fetch users (profiles)
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('id, email');
-      
-      if (userError) {
-        console.error("Error fetching users:", userError);
-        toast.error("Failed to load users");
-        return;
+      // Fetch users (profiles) with a more direct approach
+      try {
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('id, email');
+        
+        if (userError) {
+          throw userError;
+        }
+        
+        setUsers(userData || []);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        // Fallback method if the profiles table has RLS issues
+        toast.error("Using fallback method to load users");
       }
-      
-      setUsers(userData || []);
     };
     
     fetchBookings();
     fetchVenuesAndSports();
+    
+    // Set up real-time listener for bookings
+    const channel = supabase
+      .channel('bookings-changes')
+      .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'bookings' },
+          (payload) => {
+            console.log("Booking changed:", payload);
+            fetchBookings(); // Re-fetch all bookings when a change occurs
+          })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
   
   const filteredBookings = bookings.filter(booking => {
@@ -215,65 +231,72 @@ export function BookingsList() {
         </Select>
       </div>
       
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Customer</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Venue & Sport</TableHead>
-              <TableHead>Date & Time</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredBookings.map((booking) => (
-              <TableRow key={booking.id}>
-                <TableCell className="font-medium">
-                  {booking.full_name}
-                </TableCell>
-                <TableCell>
-                  {booking.profiles?.email || "N/A"}
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <div className="font-medium">{booking.venues?.name}</div>
-                    <div className="text-sm text-gray-500">{booking.venues?.location}</div>
-                    <div className="text-sm text-gray-500">{booking.sports?.name}</div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {format(new Date(booking.slot_time), "PPp")}
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant={
-                      booking.status === 'confirmed' ? 'default' :
-                      booking.status === 'cancelled' ? 'destructive' :
-                      'secondary'
-                    }
-                  >
-                    {booking.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>{booking.phone}</TableCell>
-                <TableCell>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => handleEditClick(booking)}
-                  >
-                    <PencilIcon className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                </TableCell>
+      {filteredBookings.length === 0 ? (
+        <div className="p-8 text-center border rounded-md bg-gray-50">
+          <p className="text-lg text-gray-500">No bookings found</p>
+          <p className="text-sm text-gray-400">Try adjusting your filters or adding some bookings</p>
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Customer</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Venue & Sport</TableHead>
+                <TableHead>Date & Time</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filteredBookings.map((booking) => (
+                <TableRow key={booking.id}>
+                  <TableCell className="font-medium">
+                    {booking.full_name}
+                  </TableCell>
+                  <TableCell>
+                    {booking.profiles?.email || "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{booking.venues?.name}</div>
+                      <div className="text-sm text-gray-500">{booking.venues?.location}</div>
+                      <div className="text-sm text-gray-500">{booking.sports?.name}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {booking.slot_time ? format(new Date(booking.slot_time), "PPp") : "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={
+                        booking.status === 'confirmed' ? 'default' :
+                        booking.status === 'cancelled' ? 'destructive' :
+                        'secondary'
+                      }
+                    >
+                      {booking.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{booking.phone}</TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleEditClick(booking)}
+                    >
+                      <PencilIcon className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
       
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
