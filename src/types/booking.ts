@@ -23,7 +23,7 @@ export interface Booking {
     [key: string]: any;
   };
   profiles?: {
-    email: string;
+    email?: string;  // Make email optional
     [key: string]: any;
-  };
+  } | null;  // Allow profiles to be null
 }

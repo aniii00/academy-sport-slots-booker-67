@@ -53,13 +53,22 @@ export function BookingsList() {
         }
 
         console.log("Fetched bookings:", bookingsData);
-        // Handle type conversion before setting state
-        const typedBookings: Booking[] = bookingsData?.map(booking => ({
-          ...booking,
-          venues: booking.venues || { name: "Unknown", location: "Unknown" },
-          sports: booking.sports || { name: "Unknown" },
-          profiles: booking.profiles || { email: "Unknown" }
-        })) || [];
+        
+        // Safely map data to the Booking type - handle possible profile errors
+        const typedBookings: Booking[] = bookingsData?.map(booking => {
+          // Check if profiles is a valid object with an email property or handle the error case
+          const profileData = 
+            booking.profiles && typeof booking.profiles === 'object' && !('error' in booking.profiles)
+              ? booking.profiles 
+              : { email: `Unknown (${booking.user_id.substring(0, 8)})` };
+          
+          return {
+            ...booking,
+            venues: booking.venues || { name: "Unknown", location: "Unknown" },
+            sports: booking.sports || { name: "Unknown" },
+            profiles: profileData
+          };
+        }) || [];
         
         setBookings(typedBookings);
       } catch (error) {
