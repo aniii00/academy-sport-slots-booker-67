@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,13 +8,13 @@ import { SportsTab } from "@/components/admin/sports-tab";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
-import { Shield, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { ShieldIcon } from "@/utils/iconMapping";
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("bookings");
   const { user, profile, isAdmin, isLoading } = useAuth();
   
-  // Debug information in console
   useEffect(() => {
     console.log("Admin page - Auth state:", { 
       user: !!user, 
@@ -67,7 +66,7 @@ export default function Admin() {
         subtitle="Manage bookings, centers, and sports"
         action={
           <div className="flex items-center text-primary">
-            <Shield className="mr-2 h-6 w-6" />
+            <ShieldIcon className="mr-2 h-6 w-6" />
           </div>
         }
       />
@@ -75,7 +74,7 @@ export default function Admin() {
       <Card className="bg-green-50 border-green-200 mb-6">
         <CardContent className="pt-6">
           <div className="flex items-center text-green-700">
-            <Shield className="h-5 w-5 mr-2" />
+            <ShieldIcon className="h-5 w-5 mr-2" />
             <p>You are logged in as an admin with full access to the admin panel.</p>
           </div>
         </CardContent>

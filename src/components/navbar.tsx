@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { HomeIcon, GridIcon, CalendarIcon, UserIcon, ShieldIcon } from "lucide-react";
+import { HomeIcon, GridIcon, CalendarIcon, UserIcon, ShieldIcon } from "@/utils/iconMapping";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 
