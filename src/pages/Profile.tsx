@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -175,8 +174,9 @@ export default function Profile() {
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => {
-                  // Use IST formatting for the booking time
+                  console.log("Original booking time:", booking.slot_time);
                   const formattedDateTime = formatDateTimeIST(booking.slot_time);
+                  console.log("Formatted booking time:", formattedDateTime);
                   
                   return (
                     <Card key={booking.id} className="bg-gray-50">
