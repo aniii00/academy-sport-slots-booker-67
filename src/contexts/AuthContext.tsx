@@ -38,22 +38,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasTriedFetchingProfile, setHasTriedFetchingProfile] = useState(false);
   const navigate = useNavigate();
 
   const fetchProfile = async (userId: string) => {
     try {
       console.log("Fetching profile for user ID:", userId);
       
-      // Use simplified query to avoid recursion in RLS policies
+      // Direct query approach to avoid recursion 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, email, first_name, last_name, role, created_at, updated_at')
+        .select('*')
         .eq('id', userId)
         .maybeSingle();
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
-        toast.error('Error loading user profile');
+        
+        // Only show toast error if this is not the first attempt 
+        // This prevents showing errors during initial load
+        if (hasTriedFetchingProfile) {
+          toast.error('Error loading user profile');
+        }
+        
+        setHasTriedFetchingProfile(true);
         return;
       }
 
@@ -61,12 +69,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('Profile fetched successfully:', profileData);
         console.log('User role:', profileData.role);
         setProfile(profileData);
+        setHasTriedFetchingProfile(true);
       } else {
         console.log('No profile found for user:', userId);
+        setHasTriedFetchingProfile(true);
+        
+        // Only show this message if we've already tried once to prevent confusion during initial load
+        if (hasTriedFetchingProfile) {
+          toast.error('User profile not found');
+        }
       }
     } catch (error) {
       console.error('Error in profile fetch function:', error);
-      toast.error('Error loading user profile');
+      // Only show toast error if this is not the first attempt
+      if (hasTriedFetchingProfile) {
+        toast.error('Error loading user profile');
+      }
+      setHasTriedFetchingProfile(true);
     }
   };
 
@@ -77,12 +96,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(currentSession?.user ?? null);
 
       if (currentSession?.user) {
-        // Use setTimeout to prevent potential recursion with auth state changes
+        // Use a delay to prevent potential recursion with auth state changes
         setTimeout(() => {
           fetchProfile(currentSession.user.id);
-        }, 0);
+        }, 100);
       } else {
         setProfile(null);
+        setHasTriedFetchingProfile(false);
       }
     };
 
@@ -96,8 +116,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (currentSession?.user) {
         fetchProfile(currentSession.user.id);
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     return () => {
@@ -105,12 +126,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
+  // Update isLoading state when profile fetch completes
+  useEffect(() => {
+    if (user && hasTriedFetchingProfile) {
+      setIsLoading(false);
+    }
+  }, [user, hasTriedFetchingProfile]);
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
       setProfile(null);
+      setHasTriedFetchingProfile(false);
       navigate("/auth");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -126,9 +155,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       isAdmin,
       profileRole: profile?.role,
       hasProfile: !!profile,
-      isLoading
+      isLoading,
+      hasTriedFetchingProfile
     });
-  }, [profile, isAdmin, isLoading]);
+  }, [profile, isAdmin, isLoading, hasTriedFetchingProfile]);
 
   const value = {
     user,

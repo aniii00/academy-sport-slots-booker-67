@@ -41,6 +41,23 @@ export default function Admin() {
     return <Navigate to="/auth" replace />;
   }
   
+  if (!profile) {
+    return (
+      <div className="container mx-auto py-12 px-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
+          <AlertTriangle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
+          <h2 className="text-2xl font-bold text-amber-700 mb-2">Profile Loading Error</h2>
+          <p className="text-amber-600 mb-4">
+            Unable to load your user profile. Please try refreshing the page.
+          </p>
+          <p className="text-gray-600 text-sm">
+            Current email: {user?.email || "Unknown"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
   if (!isAdmin) {
     return (
       <div className="container mx-auto py-12 px-4">

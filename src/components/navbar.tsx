@@ -2,12 +2,12 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { HomeIcon, GridIcon, CalendarIcon, UserIcon, ShieldIcon } from "lucide-react";
+import { HomeIcon, GridIcon, CalendarIcon, UserIcon, ShieldIcon, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 
 export function Navbar() {
-  const { user, session, isAdmin, isLoading, signOut } = useAuth();
+  const { user, session, isAdmin, isLoading, profile, signOut } = useAuth();
   const { toast } = useToast();
   const [isSigningOut, setIsSigningOut] = useState(false);
   
@@ -16,9 +16,10 @@ export function Navbar() {
     console.log("Navbar - Auth state:", { 
       isLoggedIn: !!user,
       isAdmin,
-      profileRole: isAdmin ? 'admin' : 'user'
+      profileRole: profile?.role || 'unknown',
+      hasProfile: !!profile
     });
-  }, [user, isAdmin]);
+  }, [user, isAdmin, profile]);
   
   const handleSignOut = async () => {
     if (isSigningOut) return;
@@ -70,6 +71,12 @@ export function Navbar() {
               </Button>
             ) : user ? (
               <>
+                {!profile && (
+                  <Button variant="ghost" className="text-amber-500 flex items-center gap-2" onClick={() => window.location.reload()}>
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="hidden sm:inline">Profile Error</span>
+                  </Button>
+                )}
                 <Link to="/profile">
                   <Button variant="ghost" className="flex items-center gap-2">
                     <UserIcon className="h-4 w-4" />

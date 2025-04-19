@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserIcon, LogOutIcon, RefreshCwIcon, CalendarIcon } from "lucide-react";
+import { UserIcon, LogOutIcon, RefreshCwIcon, CalendarIcon, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +15,9 @@ import type { Booking } from "@/types/booking";
 import { format, parseISO } from "date-fns";
 
 export default function Profile() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isLoading } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isBookingsLoading, setIsBookingsLoading] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -29,13 +29,15 @@ export default function Profile() {
       return;
     }
 
-    fetchBookings();
-  }, [user, navigate]);
+    if (user && !isLoading) {
+      fetchBookings();
+    }
+  }, [user, navigate, isLoading]);
 
   const fetchBookings = useCallback(async () => {
     if (!user?.id) return;
     
-    setIsLoading(true);
+    setIsBookingsLoading(true);
     setError(null);
     try {
       console.log("Fetching bookings for user ID:", user?.id);
@@ -79,7 +81,7 @@ export default function Profile() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsBookingsLoading(false);
     }
   }, [user?.id, toast]);
 
@@ -97,6 +99,10 @@ export default function Profile() {
       });
       setIsSigningOut(false);
     }
+  };
+
+  const handleRetryProfile = () => {
+    window.location.reload();
   };
 
   // Helper function to format dates properly for timestamp without timezone
@@ -135,6 +141,7 @@ export default function Profile() {
       return "Date format error";
     }
   };
+  
   const formatBookingTime = (dateTimeStr: string) => {
     try {
       if (!dateTimeStr) return "Invalid time";
@@ -187,6 +194,41 @@ export default function Profile() {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="container max-w-4xl mx-auto p-4 space-y-6">
+        <PageHeader title="Profile" />
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mr-3"></div>
+          <span>Loading your profile...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="container max-w-4xl mx-auto p-4 space-y-6">
+        <PageHeader title="Profile" />
+        <Card className="bg-amber-50 border-amber-200">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center text-center p-4">
+              <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+              <h2 className="text-xl font-bold text-amber-700 mb-2">Profile Loading Error</h2>
+              <p className="text-amber-600 mb-4">
+                We encountered an error while loading your profile. This could be due to a temporary issue.
+              </p>
+              <Button variant="outline" onClick={handleRetryProfile} className="mt-2">
+                <RefreshCwIcon className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container max-w-4xl mx-auto p-4 space-y-6">
       <PageHeader 
@@ -226,14 +268,14 @@ export default function Profile() {
               variant="outline" 
               size="sm"
               onClick={fetchBookings}
-              disabled={isLoading}
+              disabled={isBookingsLoading}
             >
-              <RefreshCwIcon className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCwIcon className={`h-4 w-4 mr-2 ${isBookingsLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {isBookingsLoading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
                   <Skeleton key={i} className="h-28" />
