@@ -16,6 +16,7 @@ export const BookingsList = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   
   const fetchBookings = async () => {
+    console.log("Fetching bookings for admin view");
     const { data, error } = await supabase
       .from("bookings")
       .select(`
@@ -31,6 +32,7 @@ export const BookingsList = () => {
       throw new Error("Failed to fetch bookings");
     }
     
+    console.log("Bookings fetched successfully:", data?.length || 0, "bookings");
     return data as Booking[];
   };
   
@@ -65,6 +67,10 @@ export const BookingsList = () => {
     
     return matchesSearch && matchesStatus;
   });
+  
+  useEffect(() => {
+    console.log("BookingsList component mounted");
+  }, []);
   
   return (
     <Card>

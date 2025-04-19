@@ -42,6 +42,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log("Fetching profile for user ID:", userId);
+      
       // Use simplified query to avoid recursion in RLS policies
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -57,6 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (profileData) {
         console.log('Profile fetched successfully:', profileData);
+        console.log('User role:', profileData.role);
         setProfile(profileData);
       } else {
         console.log('No profile found for user:', userId);
@@ -114,11 +117,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Make sure the isAdmin value is correctly computed
+  const isAdmin = profile?.role === "admin";
+  
+  // Debug log for admin status
+  useEffect(() => {
+    console.log("Auth context state updated:", {
+      isAdmin,
+      profileRole: profile?.role,
+      hasProfile: !!profile,
+      isLoading
+    });
+  }, [profile, isAdmin, isLoading]);
+
   const value = {
     user,
     session,
     profile,
-    isAdmin: profile?.role === "admin",
+    isAdmin,
     isLoading,
     signOut,
   };

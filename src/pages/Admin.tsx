@@ -22,9 +22,10 @@ export default function Admin() {
       profile: profile,
       isAdmin: isAdmin,
       profileRole: profile?.role,
-      userEmail: user?.email
+      userEmail: user?.email,
+      isLoading: isLoading
     });
-  }, [user, profile, isAdmin]);
+  }, [user, profile, isAdmin, isLoading]);
   
   if (isLoading) {
     return (
