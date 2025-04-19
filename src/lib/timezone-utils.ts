@@ -1,5 +1,5 @@
 
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addMinutes } from 'date-fns';
 
 /**
  * Format a datetime string to IST display format
@@ -25,8 +25,33 @@ export function formatDateTimeIST(dateTimeStr: string) {
 }
 
 /**
- * Format a time string (HH:MM:SS) to IST display format (hh:mm a)
- * No timezone conversion - assumes input is already in IST
+ * Format a datetime string to IST time range display format
+ * This function assumes the input is already in IST and uses a default 30-minute slot
+ */
+export function formatTimeRangeIST(dateTimeStr: string, durationMinutes: number = 30) {
+  try {
+    console.log("formatTimeRangeIST - Original:", dateTimeStr);
+    
+    // Parse the datetime string that's already in IST
+    const startDate = parseISO(dateTimeStr);
+    const endDate = addMinutes(startDate, durationMinutes);
+    
+    // Format start and end times
+    const startTime = format(startDate, 'hh:mm a');
+    const endTime = format(endDate, 'hh:mm a');
+    
+    const formattedTimeRange = `${startTime} - ${endTime}`;
+    console.log("formatTimeRangeIST - Formatted:", formattedTimeRange);
+    
+    return formattedTimeRange;
+  } catch (error) {
+    console.error('Error formatting IST time range:', error);
+    return dateTimeStr;
+  }
+}
+
+/**
+ * Format time (hour and minute) for IST display
  */
 export function formatTimeIST(timeStr: string) {
   try {

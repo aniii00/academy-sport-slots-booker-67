@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
-import { formatDateTimeIST } from "@/lib/timezone-utils";
+import { formatDateTimeIST, formatTimeRangeIST } from "@/lib/timezone-utils";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -178,7 +178,9 @@ export default function Profile() {
                   
                   // Parse directly without timezone conversion
                   const formattedDateTime = formatDateTimeIST(booking.slot_time);
+                  const formattedTimeRange = formatTimeRangeIST(booking.slot_time);
                   console.log("Formatted booking time:", formattedDateTime);
+                  console.log("Formatted time range:", formattedTimeRange);
                   
                   return (
                     <Card key={booking.id} className="bg-gray-50">
@@ -191,6 +193,9 @@ export default function Profile() {
                             <p className="text-sm text-gray-600">
                               {formattedDateTime}
                             </p>
+                            <p className="text-sm text-gray-600">
+                              {formattedTimeRange}
+                            </p>
                           </div>
                           <div className="text-right">
                             <Badge 
@@ -199,7 +204,7 @@ export default function Profile() {
                             >
                               {booking.status}
                             </Badge>
-                            <p className="font-medium">₹{booking.amount}</p>
+                            <p className="font-medium">��{booking.amount}</p>
                           </div>
                         </div>
                       </CardContent>
