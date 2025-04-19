@@ -122,7 +122,6 @@ export default function Slots() {
       try {
         const formattedDate = format(date, 'yyyy-MM-dd');
         
-        // First check if slots exist for this venue, sport, and date
         const { data: existingSlots, error: slotsError } = await supabase
           .from('slots')
           .select('*')
@@ -138,7 +137,6 @@ export default function Slots() {
         } else {
           console.log("No existing slots found, generating new ones");
           
-          // Check venue timings - create default ones if none exist
           const { data: timingsData, error: timingsError } = await supabase
             .from('venue_timings')
             .select('*')
@@ -151,7 +149,6 @@ export default function Slots() {
             await createDefaultVenueTimings(selectedVenue.id);
           }
           
-          // Check venue pricing - create default ones if none exist
           const { data: pricingData, error: pricingError } = await supabase
             .from('venue_pricing')
             .select('*')
@@ -164,7 +161,6 @@ export default function Slots() {
             await createDefaultVenuePricing(selectedVenue.id);
           }
           
-          // Generate slots for this venue, sport, and date
           const generatedSlots = await generateSlotsForVenueAndDate(
             selectedVenue.id, 
             selectedSport.id, 
@@ -193,7 +189,6 @@ export default function Slots() {
       const now = new Date().toISOString();
       
       for (const day of daysOfWeek) {
-        // Morning timing (6 AM to 12 PM)
         timingsToInsert.push({
           id: crypto.randomUUID(),
           venue_id: venueId,
@@ -205,7 +200,6 @@ export default function Slots() {
           updated_at: now
         });
         
-        // Evening timing (12 PM to 11 PM)
         timingsToInsert.push({
           id: crypto.randomUUID(),
           venue_id: venueId,
@@ -236,7 +230,6 @@ export default function Slots() {
     try {
       const now = new Date().toISOString();
       const pricingToInsert = [
-        // Weekday pricing (Monday-Thursday)
         {
           id: crypto.randomUUID(),
           venue_id: venueId,
@@ -260,7 +253,6 @@ export default function Slots() {
           updated_at: now
         },
         
-        // Weekend pricing (Friday-Sunday)
         {
           id: crypto.randomUUID(),
           venue_id: venueId,
@@ -307,7 +299,6 @@ export default function Slots() {
     try {
       const dayOfWeek = format(new Date(formattedDate), 'EEEE').toLowerCase();
       
-      // Fetch venue-specific timings
       const { data: timingsData, error: timingsError } = await supabase
         .from('venue_timings')
         .select('*')
@@ -316,7 +307,6 @@ export default function Slots() {
       
       if (timingsError) throw timingsError;
       
-      // If no timings found, create default timings for this venue and day
       if (!timingsData || timingsData.length === 0) {
         console.log("No venue timings found, creating default ones");
         const now = new Date().toISOString();
@@ -352,7 +342,6 @@ export default function Slots() {
         timingsData.push(...defaultTimings);
       }
       
-      // Fetch venue pricing
       const { data: pricingData, error: pricingError } = await supabase
         .from('venue_pricing')
         .select('*')
@@ -360,7 +349,6 @@ export default function Slots() {
       
       if (pricingError) throw pricingError;
       
-      // If no pricing found, create default pricing
       if (!pricingData || pricingData.length === 0) {
         console.log("No venue pricing found, creating default ones");
         const now = new Date().toISOString();
@@ -387,7 +375,6 @@ export default function Slots() {
         pricingData.push(...defaultPricing);
       }
       
-      // Generate slots
       const slotsToInsert: Omit<Slot, 'id'>[] = [];
       
       for (const timing of timingsData) {
@@ -399,7 +386,6 @@ export default function Slots() {
           currentTime = addMinutes(currentTime, 30);
           const slotEndTime = format(currentTime, 'HH:mm:ss');
           
-          // Get price based on timing rules
           const price = getSlotPrice(
             pricingData || [], 
             dayOfWeek, 
@@ -425,7 +411,6 @@ export default function Slots() {
         return [];
       }
       
-      // Insert slots in batches
       const BATCH_SIZE = 10;
       const insertedSlots: Slot[] = [];
       
@@ -493,35 +478,29 @@ export default function Slots() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gradient-to-b from-gray-50 to-white"
+      className="min-h-screen bg-gradient-to-br from-[#F2FCE2] via-[#FEF7CD] to-[#FEC6A1] p-6"
     >
       <PageHeader 
         title="Available Slots" 
         subtitle={selectedVenue ? `at ${selectedVenue.name}` : "Select a venue and sport"}
         showBackButton
         backTo="/venue"
+        className="mb-8"
       />
       
       <motion.div 
-        className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 relative"
-        initial={{ y: 20 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5 }}
+        className="mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 relative"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, staggerChildren: 0.1 }}
       >
-        <div className="relative">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-sports-lightBlue to-transparent opacity-20 rounded-xl blur-lg"
-            animate={{
-              scale: [1, 1.02, 1],
-              opacity: [0.1, 0.2, 0.1],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              repeatType: "reverse",
-            }}
-          />
-          <label className="block text-sm font-medium mb-1">Select Venue</label>
+        <motion.div 
+          className="bg-white/50 backdrop-blur-lg rounded-2xl p-4 shadow-lg"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 300 }}
+        >
+          <label className="block text-sm font-medium text-gray-700 mb-2">Select Venue</label>
           <Select 
             value={selectedVenue?.id} 
             onValueChange={(value) => {
@@ -529,34 +508,30 @@ export default function Slots() {
               setSelectedVenue(venue || null);
             }}
           >
-            <SelectTrigger className="bg-white/80 backdrop-blur">
+            <SelectTrigger className="bg-[#E5DEFF]/50 border-[#9b87f5]/30">
               <SelectValue placeholder="Select a venue" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white/80 backdrop-blur-lg">
               {venues.map((venue) => (
-                <SelectItem key={venue.id} value={venue.id}>
+                <SelectItem 
+                  key={venue.id} 
+                  value={venue.id}
+                  className="hover:bg-[#E5DEFF]/50"
+                >
                   {venue.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </motion.div>
         
-        <div className="relative">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-sports-lightOrange to-transparent opacity-20 rounded-xl blur-lg"
-            animate={{
-              scale: [1, 1.02, 1],
-              opacity: [0.1, 0.2, 0.1],
-            }}
-            transition={{
-              duration: 3,
-              delay: 0.5,
-              repeat: Infinity,
-              repeatType: "reverse",
-            }}
-          />
-          <label className="block text-sm font-medium mb-1">Select Sport</label>
+        <motion.div 
+          className="bg-white/50 backdrop-blur-lg rounded-2xl p-4 shadow-lg"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 300, delay: 0.1 }}
+        >
+          <label className="block text-sm font-medium text-gray-700 mb-2">Select Sport</label>
           <Select 
             value={selectedSport?.id} 
             onValueChange={(value) => {
@@ -565,57 +540,53 @@ export default function Slots() {
             }}
             disabled={!selectedVenue || availableSports.length === 0}
           >
-            <SelectTrigger className="bg-white/80 backdrop-blur">
+            <SelectTrigger className="bg-[#FDE1D3]/50 border-[#FF7A00]/30">
               <SelectValue placeholder="Select a sport" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white/80 backdrop-blur-lg">
               {availableSports.map((sport) => (
-                <SelectItem key={sport.id} value={sport.id}>
+                <SelectItem 
+                  key={sport.id} 
+                  value={sport.id}
+                  className="hover:bg-[#FDE1D3]/50"
+                >
                   {sport.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </motion.div>
         
-        <div className="relative">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-sports-lightBlue to-transparent opacity-20 rounded-xl blur-lg"
-            animate={{
-              scale: [1, 1.02, 1],
-              opacity: [0.1, 0.2, 0.1],
-            }}
-            transition={{
-              duration: 3,
-              delay: 1,
-              repeat: Infinity,
-              repeatType: "reverse",
-            }}
-          />
-          <label className="block text-sm font-medium mb-1">Select Date</label>
+        <motion.div 
+          className="bg-white/50 backdrop-blur-lg rounded-2xl p-4 shadow-lg"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
+        >
+          <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-start text-left font-normal bg-white/80 backdrop-blur"
+                className="w-full justify-start text-left bg-[#D3E4FD]/50 border-[#0070DC]/30"
                 disabled={!selectedVenue || !selectedSport}
               >
-                <CalendarIcon className="mr-2 h-4 w-4" />
+                <CalendarIcon className="mr-2 h-4 w-4 text-[#0070DC]" />
                 {date ? format(date, "PPP") : "Pick a date"}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
+            <PopoverContent className="w-auto p-0 bg-white/80 backdrop-blur-lg">
               <Calendar
                 mode="single"
                 selected={date}
                 onSelect={(newDate) => setDate(newDate || new Date())}
                 initialFocus
                 disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0)) || date > addDays(new Date(), 30)}
-                className="rounded-lg border shadow-lg bg-white"
+                className="rounded-lg border shadow-lg"
               />
             </PopoverContent>
           </Popover>
-        </div>
+        </motion.div>
       </motion.div>
       
       {isLoading ? (
@@ -625,21 +596,21 @@ export default function Slots() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <h3 className="text-xl font-semibold mb-2">Loading...</h3>
+          <h3 className="text-xl font-semibold mb-2 text-gray-700">Loading...</h3>
         </motion.div>
       ) : selectedVenue && selectedSport ? (
         slots.length > 0 ? (
           <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 relative"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 relative"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, staggerChildren: 0.1 }}
           >
             <motion.div
-              className="absolute inset-0 -z-10 bg-gradient-to-tr from-sports-lightBlue via-transparent to-sports-lightOrange opacity-30 rounded-3xl blur-3xl"
+              className="absolute inset-0 -z-10 bg-gradient-to-tr from-[#F2FCE2]/30 via-transparent to-[#FEC6A1]/30 opacity-50 rounded-3xl blur-3xl"
               animate={{
                 scale: [1, 1.05, 1],
-                opacity: [0.2, 0.3, 0.2],
+                opacity: [0.3, 0.5, 0.3],
               }}
               transition={{
                 duration: 5,
@@ -652,26 +623,27 @@ export default function Slots() {
                 key={slot.id} 
                 slot={slot}
                 index={index}
+                className="bg-white/60 backdrop-blur-lg shadow-xl rounded-2xl"
               />
             ))}
           </motion.div>
         ) : (
           <motion.div 
-            className="text-center py-12"
+            className="text-center py-12 bg-white/50 backdrop-blur-lg rounded-2xl"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h3 className="text-xl font-semibold mb-2">No slots available</h3>
+            <h3 className="text-xl font-semibold mb-2 text-gray-700">No slots available</h3>
             <p className="text-gray-500">Try selecting a different date or sport</p>
           </motion.div>
         )
       ) : (
         <motion.div 
-          className="text-center py-12"
+          className="text-center py-12 bg-white/50 backdrop-blur-lg rounded-2xl"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h3 className="text-xl font-semibold mb-2">Select a venue and sport</h3>
+          <h3 className="text-xl font-semibold mb-2 text-gray-700">Select a venue and sport</h3>
           <p className="text-gray-500">Choose a venue and sport to view available slots</p>
         </motion.div>
       )}
