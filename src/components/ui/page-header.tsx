@@ -2,6 +2,7 @@
 import { BackIcon } from "@/utils/iconMapping";
 import { Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
   title: string;
@@ -9,6 +10,7 @@ interface PageHeaderProps {
   showBackButton?: boolean;
   backTo?: string;
   action?: React.ReactNode;
+  className?: string;
 }
 
 export function PageHeader({ 
@@ -16,12 +18,13 @@ export function PageHeader({
   subtitle, 
   showBackButton = false, 
   backTo = "/",
-  action
+  action,
+  className
 }: PageHeaderProps) {
   const isMobile = useIsMobile();
   
   return (
-    <div className={`flex items-center justify-between ${isMobile ? 'py-3 mb-3' : 'py-4 mb-4'} border-b`}>
+    <div className={cn(`flex items-center justify-between ${isMobile ? 'py-3 mb-3' : 'py-4 mb-4'} border-b`, className)}>
       <div className="flex items-center gap-2">
         {showBackButton && (
           <Link to={backTo} className={`${isMobile ? 'p-1.5' : 'p-2'} rounded-full hover:bg-gray-100`}>
