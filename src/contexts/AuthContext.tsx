@@ -113,14 +113,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (error.code === '42P17' && error.message.includes('infinite recursion')) {
           console.log("Infinite recursion detected, manually setting admin status");
           
-          // Simplified fallback approach - query the auth.users table instead
-          // Since we can't query auth.users directly via Supabase JS, we'll use a direct REST call
+          // Simplified fallback approach using direct REST API call
+          // Instead of accessing protected properties, use the Supabase URL from the client
+          const supabaseUrl = "https://gvrayvnoriflhjyauqrg.supabase.co";
+          const apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2cmF5dm5vcmlmbGhqeWF1cXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5MTg2MjQsImV4cCI6MjA2MDQ5NDYyNH0.ovMMDxFMz-qU326eSW-drj_4sm_foRp97CFIsXe-a94";
+          
           const authResponse = await fetch(
-            `${supabase.supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=role`, 
+            `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=role`, 
             {
               headers: {
-                "apikey": supabase.supabaseKey,
-                "Authorization": `Bearer ${supabase.supabaseKey}`,
+                "apikey": apiKey,
+                "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json"
               }
             }
