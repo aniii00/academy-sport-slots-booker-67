@@ -27,6 +27,7 @@ export function VenuesTab() {
           `);
 
         if (error) throw error;
+        console.log("Fetched venues:", venuesData);
         setVenues(venuesData || []);
       } catch (error) {
         console.error("Error fetching venues:", error);
@@ -57,7 +58,6 @@ export function VenuesTab() {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Location</TableHead>
-            <TableHead>City</TableHead>
             <TableHead>Address</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -66,7 +66,6 @@ export function VenuesTab() {
           {venues.map((venue) => (
             <TableRow key={venue.id}>
               <TableCell className="font-medium">{venue.name}</TableCell>
-              <TableCell>{venue.location}</TableCell>
               <TableCell>{venue.location}</TableCell>
               <TableCell>{venue.address}</TableCell>
               <TableCell className="text-right">

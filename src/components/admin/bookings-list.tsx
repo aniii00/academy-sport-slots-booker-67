@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -28,61 +27,86 @@ export function BookingsList() {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
+        // Debug: Log the current user's ID
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        console.log("Logged in UID:", user?.id); // this should match the admin UUID
+        
+        if (userError) {
+          console.error("Error getting user:", userError);
+          return;
+        }
+        
+        // Updated query to fix the relationship error
         const { data, error } = await supabase
           .from('bookings')
           .select(`
-            *,
-            venues ( * ),
-            sports ( * ),
-            profiles:user_id ( email )
+            id,
+            user_id,
+            venue_id,
+            sport_id,
+            slot_id,
+            slot_time,
+            status,
+            full_name,
+            phone,
+            created_at,
+            updated_at,
+            amount
           `)
           .order('created_at', { ascending: false });
         
         if (error) throw error;
         
-        // Transform the data to include amount (default to 0 if not present)
-        const bookingsWithAmount = (data as any[])?.map(booking => ({
-          ...booking,
-          amount: booking.amount || 0
-        })) || [];
+        console.log("Fetched bookings:", data);
         
-        setBookings(bookingsWithAmount);
+        // Fetch related venue data for each booking
+        if (data && data.length > 0) {
+          const venueIds = [...new Set(data.map(booking => booking.venue_id))];
+          const sportIds = [...new Set(data.map(booking => booking.sport_id))];
+          const userIds = [...new Set(data.map(booking => booking.user_id))];
+          
+          // Fetch venues
+          const { data: venuesData, error: venuesError } = await supabase
+            .from('venues')
+            .select('*')
+            .in('id', venueIds);
+            
+          if (venuesError) throw venuesError;
+          
+          // Fetch sports
+          const { data: sportsData, error: sportsError } = await supabase
+            .from('sports')
+            .select('*')
+            .in('id', sportIds);
+            
+          if (sportsError) throw sportsError;
+          
+          // Fetch user emails
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, email')
+            .in('id', userIds);
+            
+          if (profilesError) throw profilesError;
+          
+          // Combine the data
+          const enrichedBookings = data.map(booking => ({
+            ...booking,
+            venues: venuesData?.find(venue => venue.id === booking.venue_id),
+            sports: sportsData?.find(sport => sport.id === booking.sport_id),
+            profiles: profilesData?.find(profile => profile.id === booking.user_id)
+          }));
+          
+          setBookings(enrichedBookings);
+        } else {
+          setBookings([]);
+        }
       } catch (error) {
         console.error("Error fetching bookings:", error);
         toast.error("Failed to load bookings");
       } finally {
         setIsLoading(false);
       }
-      
-      // Subscribe to booking changes
-      const channel = supabase
-        .channel('booking-updates')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'bookings' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const newBooking = {
-                ...payload.new as Booking,
-                amount: (payload.new as any).amount || 0
-              };
-              setBookings(prev => [newBooking, ...prev]);
-            } else if (payload.eventType === 'UPDATE') {
-              setBookings(prev => 
-                prev.map(booking => 
-                  booking.id === payload.new.id ? 
-                  { ...payload.new as Booking, amount: (payload.new as any).amount || 0 } : 
-                  booking
-                )
-              );
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     };
     
     const fetchVenuesAndSports = async () => {
