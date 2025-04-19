@@ -2,7 +2,6 @@
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { EditIcon, DeleteIcon } from "@/utils/iconMapping";
-import { centers, sports } from "@/data/mockData";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Venue } from "@/types/venue";

@@ -29,54 +29,73 @@ export function BookingsList() {
     const fetchBookings = async () => {
       try {
         console.log("Fetching bookings...");
-        // Use a simpler query that doesn't rely on foreign key relationships
-        const { data, error } = await supabase
+        // Direct fetch approach without relying on foreign key relationships
+        const { data: bookingsData, error: bookingsError } = await supabase
           .from('bookings')
-          .select('*')
-          .order('created_at', { ascending: false });
+          .select('*');
         
-        if (error) {
-          console.error("Error fetching bookings:", error);
-          throw error;
+        if (bookingsError) {
+          console.error("Error fetching bookings:", bookingsError);
+          throw bookingsError;
         }
         
-        // Get venues and sports separately
-        const bookingsWithDetails = await Promise.all((data || []).map(async (booking) => {
-          // Get venue details
-          const { data: venueData } = await supabase
-            .from('venues')
-            .select('name, location')
-            .eq('id', booking.venue_id)
-            .single();
-            
-          // Get sport details
-          const { data: sportData } = await supabase
-            .from('sports')
-            .select('name')
-            .eq('id', booking.sport_id)
-            .single();
-            
-          // Get user email
-          const { data: userData } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('id', booking.user_id)
-            .single();
-            
-          return {
-            ...booking,
-            amount: booking.amount || 0,
-            venues: venueData || { name: 'Unknown', location: 'Unknown' },
-            sports: sportData || { name: 'Unknown' },
-            profiles: userData || { email: 'Unknown' }
-          };
-        }));
+        if (!bookingsData || bookingsData.length === 0) {
+          console.log("No bookings found in the database");
+          setBookings([]);
+          setIsLoading(false);
+          return;
+        }
         
-        console.log("Bookings with details:", bookingsWithDetails);
-        setBookings(bookingsWithDetails);
+        console.log("Raw bookings data:", bookingsData);
+        
+        // Get venue, sport and user details separately and combine them
+        const enhancedBookings = await Promise.all(
+          bookingsData.map(async (booking) => {
+            // Get venue details
+            const { data: venueData } = await supabase
+              .from('venues')
+              .select('name, location')
+              .eq('id', booking.venue_id)
+              .single();
+            
+            // Get sport details
+            const { data: sportData } = await supabase
+              .from('sports')
+              .select('name')
+              .eq('id', booking.sport_id)
+              .single();
+            
+            // Get user email - using direct fetch to avoid recursion issues
+            let userEmail = "Unknown";
+            try {
+              const { data: userData } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('id', booking.user_id)
+                .single();
+                
+              if (userData) {
+                userEmail = userData.email;
+              }
+            } catch (error) {
+              console.error("Error fetching user email:", error);
+            }
+            
+            return {
+              ...booking,
+              amount: booking.amount || 0,
+              venues: venueData || { name: 'Unknown Venue', location: 'Unknown Location' },
+              sports: sportData || { name: 'Unknown Sport' },
+              profiles: { email: userEmail }
+            };
+          })
+        );
+        
+        console.log("Enhanced bookings with details:", enhancedBookings);
+        setBookings(enhancedBookings);
       } catch (error) {
-        console.error("Error fetching bookings:", error);
-        toast.error("Failed to load bookings");
+        console.error("Error processing bookings:", error);
+        toast.error("Failed to load bookings data");
       } finally {
         setIsLoading(false);
       }
@@ -109,21 +128,43 @@ export function BookingsList() {
       
       setSports(sportData || []);
       
-      // Fetch users (profiles) with a more direct approach
+      // Fetch users with direct approach to avoid recursion issues
       try {
-        const { data: userData, error: userError } = await supabase
+        const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, email');
         
-        if (userError) {
-          throw userError;
+        if (profilesError) {
+          throw profilesError;
         }
         
-        setUsers(userData || []);
+        if (profilesData && profilesData.length > 0) {
+          setUsers(profilesData);
+        } else {
+          console.log("No user profiles found, using fallback method");
+          // Create a fallback approach without relying on the profiles table
+          const { data: authUsers } = await supabase.auth.admin.listUsers();
+          
+          if (authUsers) {
+            const mappedUsers = authUsers.users.map(user => ({
+              id: user.id,
+              email: user.email || "Unknown email"
+            }));
+            setUsers(mappedUsers);
+          }
+        }
       } catch (error) {
         console.error("Error fetching users:", error);
-        // Fallback method if the profiles table has RLS issues
         toast.error("Using fallback method to load users");
+        
+        // If all else fails, just use a minimal set of users based on bookings
+        try {
+          const uniqueUserIds = [...new Set(bookings.map(booking => booking.user_id))];
+          const fallbackUsers = uniqueUserIds.map(id => ({ id, email: `User ${id.substring(0, 8)}` }));
+          setUsers(fallbackUsers);
+        } catch (fallbackError) {
+          console.error("Error creating fallback users:", fallbackError);
+        }
       }
     };
     
@@ -148,11 +189,11 @@ export function BookingsList() {
   
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = 
-      booking.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.phone?.includes(searchTerm) ||
-      booking.venues?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.sports?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking?.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      (booking.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (booking.phone?.includes(searchTerm) || false) ||
+      (booking.venues?.name.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (booking.sports?.name.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (booking?.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
       
     const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
     
@@ -254,16 +295,16 @@ export function BookingsList() {
               {filteredBookings.map((booking) => (
                 <TableRow key={booking.id}>
                   <TableCell className="font-medium">
-                    {booking.full_name}
+                    {booking.full_name || "Unknown"}
                   </TableCell>
                   <TableCell>
                     {booking.profiles?.email || "N/A"}
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{booking.venues?.name}</div>
-                      <div className="text-sm text-gray-500">{booking.venues?.location}</div>
-                      <div className="text-sm text-gray-500">{booking.sports?.name}</div>
+                      <div className="font-medium">{booking.venues?.name || "Unknown Venue"}</div>
+                      <div className="text-sm text-gray-500">{booking.venues?.location || "Unknown Location"}</div>
+                      <div className="text-sm text-gray-500">{booking.sports?.name || "Unknown Sport"}</div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -277,10 +318,10 @@ export function BookingsList() {
                         'secondary'
                       }
                     >
-                      {booking.status}
+                      {booking.status || "unknown"}
                     </Badge>
                   </TableCell>
-                  <TableCell>{booking.phone}</TableCell>
+                  <TableCell>{booking.phone || "N/A"}</TableCell>
                   <TableCell>
                     <Button 
                       variant="ghost" 

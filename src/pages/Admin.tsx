@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { BookingsList } from "@/components/admin/bookings-list";
-import { VenuesTab } from "@/components/admin/centers-tab";
+import { VenuesTab } from "@/components/admin/venues-tab";
 import { SportsTab } from "@/components/admin/sports-tab";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
