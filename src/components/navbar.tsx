@@ -7,19 +7,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 
 export function Navbar() {
-  const { user, session, isAdmin, isLoading, profile, signOut } = useAuth();
+  const { user, session, isAdmin, isLoading, signOut } = useAuth();
   const { toast } = useToast();
   const [isSigningOut, setIsSigningOut] = useState(false);
   
-  // Debug information for auth state
+  // Debug information for admin status
   useEffect(() => {
     console.log("Navbar - Auth state:", { 
       isLoggedIn: !!user,
       isAdmin,
-      profileRole: profile?.role || 'unknown',
-      hasProfile: !!profile
+      profileRole: isAdmin ? 'admin' : 'user'
     });
-  }, [user, isAdmin, profile]);
+  }, [user, isAdmin]);
   
   const handleSignOut = async () => {
     if (isSigningOut) return;

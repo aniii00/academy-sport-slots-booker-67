@@ -4,28 +4,27 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { BookingsList } from "@/components/admin/bookings-list";
-import { VenuesTab } from "@/components/admin/venues-tab";
+import { CentersTab } from "@/components/admin/centers-tab";
 import { SportsTab } from "@/components/admin/sports-tab";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
-import { Shield, AlertTriangle, RefreshCwIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Shield, AlertTriangle } from "lucide-react";
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("bookings");
   const { user, profile, isAdmin, isLoading } = useAuth();
   
+  // Debug information in console
   useEffect(() => {
     console.log("Admin page - Auth state:", { 
       user: !!user, 
       profile: profile,
       isAdmin: isAdmin,
       profileRole: profile?.role,
-      userEmail: user?.email,
-      isLoading: isLoading
+      userEmail: user?.email
     });
-  }, [user, profile, isAdmin, isLoading]);
+  }, [user, profile, isAdmin]);
   
   if (isLoading) {
     return (
@@ -41,25 +40,6 @@ export default function Admin() {
     return <Navigate to="/auth" replace />;
   }
   
-  if (!profile) {
-    return (
-      <div className="container mx-auto py-12 px-4">
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
-          <AlertTriangle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
-          <h2 className="text-2xl font-bold text-amber-700 mb-2">Profile Loading Error</h2>
-          <p className="text-amber-600 mb-4">
-            Unable to load your user profile. This could be due to a temporary issue.
-            Please try refreshing the page.
-          </p>
-          <Button variant="outline" onClick={() => window.location.reload()} className="mt-2">
-            <RefreshCwIcon className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-  
   if (!isAdmin) {
     return (
       <div className="container mx-auto py-12 px-4">
@@ -67,13 +47,14 @@ export default function Admin() {
           <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
           <h2 className="text-2xl font-bold text-red-700 mb-2">Access Denied</h2>
           <p className="text-red-600 mb-4">
-            You do not have permission to access the admin panel.
-            This area is restricted to admin users only.
+            You do not have permission to access the admin panel. This area is restricted to admin users only.
           </p>
-          <div className="text-sm text-gray-600 space-y-1">
-            <p>Current role: {profile?.role || "Unknown"}</p>
-            <p>Current email: {user?.email || "Unknown"}</p>
-          </div>
+          <p className="text-gray-600 text-sm">
+            Current role: {profile?.role || "Unknown"}
+          </p>
+          <p className="text-gray-600 text-sm">
+            Current email: {user?.email || "Unknown"}
+          </p>
         </div>
       </div>
     );
@@ -83,7 +64,7 @@ export default function Admin() {
     <div className="space-y-8">
       <PageHeader 
         title="Admin Panel"
-        subtitle="Manage bookings, venues, and sports"
+        subtitle="Manage bookings, centers, and sports"
         action={
           <div className="flex items-center text-primary">
             <Shield className="mr-2 h-6 w-6" />
@@ -103,7 +84,7 @@ export default function Admin() {
       <Tabs defaultValue="bookings" onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
-          <TabsTrigger value="venues">Venues</TabsTrigger>
+          <TabsTrigger value="centers">Centers</TabsTrigger>
           <TabsTrigger value="sports">Sports</TabsTrigger>
         </TabsList>
         
@@ -111,8 +92,8 @@ export default function Admin() {
           <BookingsList />
         </TabsContent>
         
-        <TabsContent value="venues" className="mt-6">
-          <VenuesTab />
+        <TabsContent value="centers" className="mt-6">
+          <CentersTab />
         </TabsContent>
         
         <TabsContent value="sports" className="mt-6">

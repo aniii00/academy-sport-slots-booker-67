@@ -12,6 +12,7 @@ export interface Booking {
   created_at: string;
   updated_at: string;
   amount: number;
+  // Nested relationships
   venues?: { 
     name: string;
     location: string;
@@ -22,7 +23,7 @@ export interface Booking {
     [key: string]: any;
   };
   profiles?: {
-    email?: string;  // Make email optional
+    email: string;
     [key: string]: any;
-  } | null;  // Explicitly allow profiles to be null
+  };
 }
