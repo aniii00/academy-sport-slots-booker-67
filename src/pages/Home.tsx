@@ -54,8 +54,8 @@ export default function Home() {
     setImageUrls([
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/IMG_9674.JPG",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/8a8deeb0809e534ecad138a22389e1ad.jpg",
-      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/f9607e206f51ebd4bc47b79192acfcc4.jpg"
-      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/c58154f150b31f85331996589079cbe2.jpg"
+      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/f9607e206f51ebd4bc47b79192acfcc4.jpg",
+      "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/c58154f150b31f85331996589079cbe2.jpg",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/5f51a1cee2aa31d69aad953432b9f088.jpg",
       "https://gvrayvnoriflhjyauqrg.supabase.co/storage/v1/object/public/venue-images/9e730ba6b383eafb35b15c2524847618.jpg",
     ]);
