@@ -161,6 +161,17 @@ export default function Booking() {
         return;
       }
       
+      // Check if user exists and is authenticated
+      if (!user.id) {
+        console.error("User ID is missing");
+        toast.error("Authentication error. Please log in again.");
+        setIsSubmitting(false);
+        navigate("/auth");
+        return;
+      }
+      
+      console.log("Creating booking with user ID:", user.id);
+      
       const booking = {
         user_id: user.id,
         venue_id: venue.id,
@@ -175,6 +186,14 @@ export default function Booking() {
       
       console.log("Creating booking with data:", booking);
       
+      // Log user info for debugging
+      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error("Error retrieving current user:", userError);
+      } else {
+        console.log("Current authenticated user:", currentUser);
+      }
+      
       const { data, error } = await supabase
         .from('bookings')
         .insert(booking)
@@ -184,11 +203,14 @@ export default function Booking() {
       if (error) {
         console.error("Booking error:", error);
         
-        if (error.message.includes("date/time") || error.message.includes("out of range")) {
+        if (error.message.includes("violates row-level security policy")) {
+          toast.error("Authorization error: You don't have permission to create this booking. Please contact support.");
+        } else if (error.message.includes("date/time") || error.message.includes("out of range")) {
           toast.error("Failed to save booking: Invalid date/time format. Please try a different slot.");
         } else {
           toast.error("Failed to save booking: " + error.message);
         }
+        setIsSubmitting(false);
         return;
       }
       
@@ -204,6 +226,7 @@ export default function Booking() {
     } catch (error: any) {
       console.error("Booking error:", error);
       toast.error("An unexpected error occurred");
+      setIsSubmitting(false);
     } finally {
       setIsSubmitting(false);
     }

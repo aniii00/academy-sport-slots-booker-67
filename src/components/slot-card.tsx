@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Slot, Venue, Sport } from "@/types/venue";
 import { TimeIcon, PriceIcon } from "@/utils/iconMapping";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { cn, formatDateString } from "@/lib/utils";
 import { toast } from "@/components/ui/sonner";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SlotCardProps {
   slot: Slot;
@@ -21,6 +22,8 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   const [sport, setSport] = useState<Sport | null>(null);
   const [isBooked, setIsBooked] = useState(!slot.available);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const formatTime = (timeStr: string) => {
     try {
@@ -35,7 +38,6 @@ export function SlotCard({ slot, className }: SlotCardProps) {
     }
   };
   
-
   useEffect(() => {
     const fetchDetails = async () => {
       try {
@@ -90,6 +92,16 @@ export function SlotCard({ slot, className }: SlotCardProps) {
     fetchDetails();
   }, [slot.venue_id, slot.sport_id, slot.id]);
 
+  const handleBookClick = () => {
+    if (!user) {
+      toast.error("You must be logged in to book a slot");
+      navigate("/auth", { state: { redirectTo: `/booking?slotId=${slot.id}` } });
+      return;
+    }
+    
+    navigate(`/booking?slotId=${encodeURIComponent(slot.id)}`);
+  };
+
   if (isLoading) {
     return (
       <Card
@@ -117,10 +129,6 @@ export function SlotCard({ slot, className }: SlotCardProps) {
     console.error("Date formatting error:", error, slot.date);
     formattedDate = slot.date;
   }
-
-  // Create a booking URL with properly encoded parameters
-  // If it's a database slot, use the ID directly
-  const bookingUrl = `/booking?slotId=${encodeURIComponent(slot.id)}`;
 
   return (
     <Card
@@ -161,11 +169,12 @@ export function SlotCard({ slot, className }: SlotCardProps) {
               Already Booked
             </Badge>
           ) : (
-            <Link to={bookingUrl} className="w-full">
-              <Button className="w-full rounded-xl shadow-sm hover:shadow-md bg-gradient-to-r from-sports-blue to-sports-blue/90 hover:scale-102 transition-all">
-                Book Now
-              </Button>
-            </Link>
+            <Button 
+              onClick={handleBookClick}
+              className="w-full rounded-xl shadow-sm hover:shadow-md bg-gradient-to-r from-sports-blue to-sports-blue/90 hover:scale-102 transition-all"
+            >
+              Book Now
+            </Button>
           )}
         </div>
       </CardContent>
