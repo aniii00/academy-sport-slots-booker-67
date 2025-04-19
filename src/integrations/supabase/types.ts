@@ -17,7 +17,8 @@ export type Database = {
           id: string
           phone: string
           slot_id: string | null
-          slot_time: string
+          slot_time: string | null
+          slot_time_ist: string | null
           sport_id: string
           status: string
           updated_at: string
@@ -31,7 +32,8 @@ export type Database = {
           id?: string
           phone: string
           slot_id?: string | null
-          slot_time: string
+          slot_time?: string | null
+          slot_time_ist?: string | null
           sport_id: string
           status?: string
           updated_at?: string
@@ -45,7 +47,8 @@ export type Database = {
           id?: string
           phone?: string
           slot_id?: string | null
-          slot_time?: string
+          slot_time?: string | null
+          slot_time_ist?: string | null
           sport_id?: string
           status?: string
           updated_at?: string

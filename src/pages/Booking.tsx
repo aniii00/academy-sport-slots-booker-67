@@ -138,29 +138,15 @@ export default function Booking() {
       console.log("User authenticated:", !!user);
       console.log("User ID:", user.id);
       
-      let slotDateTime;
-      
-      try {
-        if (!slot.date || !slot.start_time) {
-          throw new Error("Missing date or time information");
-        }
-        
-        slotDateTime = createISTDateTimeForDB(slot.date, slot.start_time);
-        
-        console.log("Slot date/time for database (IST):", slotDateTime);
-      } catch (dateError) {
-        console.error("Date construction error:", dateError);
-        toast.error("Invalid date format. Please try again.");
-        setIsSubmitting(false);
-        return;
-      }
+      const slotTime = `${slot.date} ${slot.start_time}`;
+      console.log("Slot time (IST):", slotTime);
       
       const booking = {
         user_id: user.id,
         venue_id: venue.id,
         sport_id: sport.id,
         slot_id: slot.id,
-        slot_time: slotDateTime,
+        slot_time: slotTime,
         status: 'confirmed',
         full_name: name,
         phone: phone,
@@ -193,16 +179,7 @@ export default function Booking() {
       
       if (error) {
         console.error("Booking error:", error);
-        
-        if (error.message.includes("violates row-level security policy")) {
-          toast.error("Authorization error. Please try logging out and logging in again.");
-          setIsSubmitting(false);
-          setTimeout(() => navigate("/auth"), 2000);
-        } else if (error.message.includes("date/time") || error.message.includes("out of range")) {
-          toast.error("Failed to save booking: Invalid date/time format. Please try a different slot.");
-        } else {
-          toast.error("Failed to save booking: " + error.message);
-        }
+        toast.error("Failed to save booking: " + error.message);
         setIsSubmitting(false);
         return;
       }
