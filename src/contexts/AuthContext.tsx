@@ -159,8 +159,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 updated_at: new Date().toISOString(),
               });
               
-              // Show toast with manual fallback info
-              toast(`Using fallback authentication for ${isAdminEmail ? "admin" : "user"} role`);
+              // Remove the toast notification that was showing the fallback message
+              // toast(`Using fallback authentication for ${isAdminEmail ? "admin" : "user"} role`);
             }
           } else {
             // If REST API fails, create a fallback profile based on user email
@@ -178,7 +178,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               updated_at: new Date().toISOString(),
             });
             
-            toast(`Using email-based fallback for ${isAdminEmail ? "admin" : "user"} role`);
+            // Remove the toast notification that was showing the fallback message
+            // toast(`Using email-based fallback for ${isAdminEmail ? "admin" : "user"} role`);
           }
         } else if (error.code !== '42501' && error.code !== '42P17') {
           // Only show an error toast for errors that aren't permissions related
