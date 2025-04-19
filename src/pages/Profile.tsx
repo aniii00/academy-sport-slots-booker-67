@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
-import { formatDateString, formatTimeWithTimezone, calculateEndTime } from "@/lib/utils";
 import { formatDateTimeIST } from "@/lib/timezone-utils";
 
 export default function Profile() {
@@ -175,6 +175,7 @@ export default function Profile() {
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => {
+                  // Use IST formatting for the booking time
                   const formattedDateTime = formatDateTimeIST(booking.slot_time);
                   
                   return (

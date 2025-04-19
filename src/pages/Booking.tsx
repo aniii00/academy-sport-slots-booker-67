@@ -19,7 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Slot, Venue, Sport } from "@/types/venue";
 import type { Booking } from "@/types/booking";
 import { formatDateString } from "@/lib/utils";
-import { formatTimeIST } from "@/lib/timezone-utils";
+import { formatTimeIST, createISTDateTimeForDB } from "@/lib/timezone-utils";
 
 export default function Booking() {
   const [searchParams] = useSearchParams();
@@ -145,20 +145,9 @@ export default function Booking() {
           throw new Error("Missing date or time information");
         }
         
-        let formattedDate = slot.date;
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(slot.date)) {
-          const parsedDate = new Date(slot.date);
-          if (!isNaN(parsedDate.getTime())) {
-            formattedDate = format(parsedDate, 'yyyy-MM-dd');
-          } else {
-            throw new Error(`Could not parse date: ${slot.date}`);
-          }
-        }
+        slotDateTime = createISTDateTimeForDB(slot.date, slot.start_time);
         
-        // Combine date and time with T separator for ISO format
-        slotDateTime = `${formattedDate}T${slot.start_time}`;
-        
-        console.log("Slot date/time for database:", slotDateTime);
+        console.log("Slot date/time for database (IST):", slotDateTime);
       } catch (dateError) {
         console.error("Date construction error:", dateError);
         toast.error("Invalid date format. Please try again.");
@@ -180,7 +169,6 @@ export default function Booking() {
       
       console.log("Creating booking with data:", booking);
       
-      // Make sure we have a fresh auth session before making the request
       const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         console.error("Error retrieving current session:", sessionError);
