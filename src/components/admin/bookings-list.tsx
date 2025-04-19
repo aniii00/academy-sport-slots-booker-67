@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Booking } from "@/types/booking";
+import { Venue, Sport } from "@/types/venue";
 import { toast } from "@/components/ui/sonner";
 import { PencilIcon } from "lucide-react";
 
@@ -51,7 +53,15 @@ export function BookingsList() {
         }
 
         console.log("Fetched bookings:", bookingsData);
-        setBookings(bookingsData || []);
+        // Handle type conversion before setting state
+        const typedBookings: Booking[] = bookingsData?.map(booking => ({
+          ...booking,
+          venues: booking.venues || { name: "Unknown", location: "Unknown" },
+          sports: booking.sports || { name: "Unknown" },
+          profiles: booking.profiles || { email: "Unknown" }
+        })) || [];
+        
+        setBookings(typedBookings);
       } catch (error) {
         console.error("Error processing bookings:", error);
         toast.error("Failed to load bookings data");
@@ -101,22 +111,19 @@ export function BookingsList() {
           setUsers(profilesData);
         } else {
           console.log("No user profiles found, using fallback method");
-          // Create a fallback approach without relying on the profiles table
-          const { data: authUsers } = await supabase.auth.admin.listUsers();
-          
-          if (authUsers) {
-            const mappedUsers = authUsers.users.map(user => ({
-              id: user.id,
-              email: user.email || "Unknown email"
-            }));
-            setUsers(mappedUsers);
-          }
+          // Create a fallback approach
+          const userIdsInBookings = [...new Set(bookings.map(booking => booking.user_id))];
+          const fallbackUsers = userIdsInBookings.map(id => ({ 
+            id, 
+            email: `User ${id.substring(0, 8)}` 
+          }));
+          setUsers(fallbackUsers);
         }
       } catch (error) {
         console.error("Error fetching users:", error);
         toast.error("Using fallback method to load users");
         
-        // If all else fails, just use a minimal set of users based on bookings
+        // Use a minimal set of users based on bookings
         try {
           const uniqueUserIds = [...new Set(bookings.map(booking => booking.user_id))];
           const fallbackUsers = uniqueUserIds.map(id => ({ id, email: `User ${id.substring(0, 8)}` }));
