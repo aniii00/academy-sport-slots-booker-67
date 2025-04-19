@@ -1,8 +1,5 @@
 
 import { format, parseISO } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
-
-const IST_TIMEZONE = 'Asia/Kolkata';
 
 /**
  * Format a datetime string to IST display format
@@ -10,9 +7,11 @@ const IST_TIMEZONE = 'Asia/Kolkata';
  */
 export function formatDateTimeIST(dateTimeStr: string) {
   try {
+    console.log("formatDateTimeIST - Original:", dateTimeStr);
+    
     // Parse the datetime string that's already in IST
     const date = parseISO(dateTimeStr);
-    console.log("formatDateTimeIST - Original:", dateTimeStr);
+    console.log("formatDateTimeIST - Parsed date:", date);
     
     // Format the date - no timezone conversion needed since input is IST
     const formatted = format(date, 'EEE, dd MMM yyyy hh:mm a');
