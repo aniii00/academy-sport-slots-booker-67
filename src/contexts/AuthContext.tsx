@@ -42,46 +42,51 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      // Use simplified query to avoid recursion in RLS policies
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, email, first_name, last_name, role, created_at, updated_at')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
-        if (profileError.code === 'PGRST116') {
-          console.log('No profile found for user:', userId);
-          return;
-        }
-        throw profileError;
+        console.error('Error fetching profile:', profileError);
+        toast.error('Error loading user profile');
+        return;
       }
 
       if (profileData) {
-        console.log('Profile fetched:', profileData);
+        console.log('Profile fetched successfully:', profileData);
         setProfile(profileData);
+      } else {
+        console.log('No profile found for user:', userId);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error in profile fetch function:', error);
       toast.error('Error loading user profile');
     }
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        console.log('Auth state changed:', event);
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+    const handleAuthChange = (event: string, currentSession: Session | null) => {
+      console.log('Auth state changed:', event);
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
 
-        if (currentSession?.user) {
-          await fetchProfile(currentSession.user.id);
-        } else {
-          setProfile(null);
-        }
-        setIsLoading(false);
+      if (currentSession?.user) {
+        // Use setTimeout to prevent potential recursion with auth state changes
+        setTimeout(() => {
+          fetchProfile(currentSession.user.id);
+        }, 0);
+      } else {
+        setProfile(null);
       }
-    );
+    };
 
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
