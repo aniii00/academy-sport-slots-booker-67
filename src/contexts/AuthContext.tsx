@@ -38,14 +38,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasTriedFetchingProfile, setHasTriedFetchingProfile] = useState(false);
   const navigate = useNavigate();
 
   const fetchProfile = async (userId: string) => {
     try {
       console.log("Fetching profile for user ID:", userId);
       
-      // Direct query approach to avoid recursion 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -54,62 +52,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
-        
-        // Only show toast error if this is not the first attempt 
-        // This prevents showing errors during initial load
-        if (hasTriedFetchingProfile) {
-          toast.error('Error loading user profile');
-        }
-        
-        setHasTriedFetchingProfile(true);
+        toast.error('Error loading user profile');
         return;
       }
 
       if (profileData) {
         console.log('Profile fetched successfully:', profileData);
-        console.log('User role:', profileData.role);
         setProfile(profileData);
-        setHasTriedFetchingProfile(true);
       } else {
         console.log('No profile found for user:', userId);
-        setHasTriedFetchingProfile(true);
-        
-        // Only show this message if we've already tried once to prevent confusion during initial load
-        if (hasTriedFetchingProfile) {
-          toast.error('User profile not found');
-        }
+        toast.error('User profile not found');
       }
     } catch (error) {
       console.error('Error in profile fetch function:', error);
-      // Only show toast error if this is not the first attempt
-      if (hasTriedFetchingProfile) {
-        toast.error('Error loading user profile');
-      }
-      setHasTriedFetchingProfile(true);
+      toast.error('Error loading user profile');
     }
   };
 
   useEffect(() => {
-    const handleAuthChange = (event: string, currentSession: Session | null) => {
-      console.log('Auth state changed:', event);
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        console.log('Auth state changed:', event);
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
 
-      if (currentSession?.user) {
-        // Use a delay to prevent potential recursion with auth state changes
-        setTimeout(() => {
-          fetchProfile(currentSession.user.id);
-        }, 100);
-      } else {
-        setProfile(null);
-        setHasTriedFetchingProfile(false);
+        if (currentSession?.user) {
+          // Use setTimeout to prevent recursion
+          setTimeout(() => {
+            fetchProfile(currentSession.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
       }
-    };
+    );
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
-
-    // Check for existing session
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
@@ -121,17 +100,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   // Update isLoading state when profile fetch completes
   useEffect(() => {
-    if (user && hasTriedFetchingProfile) {
+    if (!user || profile !== null) {
       setIsLoading(false);
     }
-  }, [user, hasTriedFetchingProfile]);
+  }, [user, profile]);
 
   const signOut = async () => {
     try {
@@ -139,10 +116,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null);
       setSession(null);
       setProfile(null);
-      setHasTriedFetchingProfile(false);
       navigate("/auth");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing out:", error);
+      toast.error("Error signing out");
     }
   };
 
@@ -151,14 +128,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   // Debug log for admin status
   useEffect(() => {
-    console.log("Auth context state updated:", {
+    console.log("Auth context state:", {
       isAdmin,
       profileRole: profile?.role,
       hasProfile: !!profile,
       isLoading,
-      hasTriedFetchingProfile
+      userId: user?.id
     });
-  }, [profile, isAdmin, isLoading, hasTriedFetchingProfile]);
+  }, [profile, isAdmin, isLoading, user]);
 
   const value = {
     user,

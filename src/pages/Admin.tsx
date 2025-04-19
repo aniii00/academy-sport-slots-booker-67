@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,13 +8,13 @@ import { SportsTab } from "@/components/admin/sports-tab";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
-import { Shield, AlertTriangle } from "lucide-react";
+import { Shield, AlertTriangle, RefreshCwIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("bookings");
   const { user, profile, isAdmin, isLoading } = useAuth();
   
-  // Debug information in console
   useEffect(() => {
     console.log("Admin page - Auth state:", { 
       user: !!user, 
@@ -48,11 +47,13 @@ export default function Admin() {
           <AlertTriangle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
           <h2 className="text-2xl font-bold text-amber-700 mb-2">Profile Loading Error</h2>
           <p className="text-amber-600 mb-4">
-            Unable to load your user profile. Please try refreshing the page.
+            Unable to load your user profile. This could be due to a temporary issue.
+            Please try refreshing the page.
           </p>
-          <p className="text-gray-600 text-sm">
-            Current email: {user?.email || "Unknown"}
-          </p>
+          <Button variant="outline" onClick={() => window.location.reload()} className="mt-2">
+            <RefreshCwIcon className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
         </div>
       </div>
     );
@@ -65,14 +66,13 @@ export default function Admin() {
           <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
           <h2 className="text-2xl font-bold text-red-700 mb-2">Access Denied</h2>
           <p className="text-red-600 mb-4">
-            You do not have permission to access the admin panel. This area is restricted to admin users only.
+            You do not have permission to access the admin panel.
+            This area is restricted to admin users only.
           </p>
-          <p className="text-gray-600 text-sm">
-            Current role: {profile?.role || "Unknown"}
-          </p>
-          <p className="text-gray-600 text-sm">
-            Current email: {user?.email || "Unknown"}
-          </p>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>Current role: {profile?.role || "Unknown"}</p>
+            <p>Current email: {user?.email || "Unknown"}</p>
+          </div>
         </div>
       </div>
     );
