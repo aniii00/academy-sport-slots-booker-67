@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -56,11 +55,14 @@ export function BookingsList() {
         
         // Safely map data to the Booking type - handle possible profile errors
         const typedBookings: Booking[] = bookingsData?.map(booking => {
-          // Check if profiles is a valid object with an email property or handle the error case
+          // Check if profiles exists, is an object, and doesn't have an error property
           const profileData = 
-            booking.profiles && typeof booking.profiles === 'object' && !('error' in booking.profiles)
+            booking.profiles && 
+            typeof booking.profiles === 'object' && 
+            booking.profiles !== null && 
+            !('error' in booking.profiles)
               ? booking.profiles 
-              : { email: `Unknown (${booking.user_id.substring(0, 8)})` };
+              : { email: `Unknown (${booking.user_id?.substring(0, 8) || 'user'})` };
           
           return {
             ...booking,
