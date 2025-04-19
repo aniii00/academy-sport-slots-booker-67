@@ -42,3 +42,40 @@ export function formatDateString(dateTimeStr: string, formatPattern: string): st
     return "Date format error";
   }
 }
+
+// Standardized date formatter specifically for handling timestamps with timezone information
+export function formatTimeWithTimezone(dateTimeStr: string): string {
+  try {
+    if (!dateTimeStr) return "Invalid time";
+    
+    // Parse the date considering timezone information
+    const date = new Date(dateTimeStr);
+    if (!isNaN(date.getTime())) {
+      return format(date, 'hh:mm a'); // 12-hour format with AM/PM
+    }
+    
+    return "Invalid time";
+  } catch (e) {
+    console.error("Error formatting time:", e, dateTimeStr);
+    return "Time format error";
+  }
+}
+
+// Calculate end time from a start time (default 30 minutes later)
+export function calculateEndTime(dateTimeStr: string, durationMinutes: number = 30): string {
+  try {
+    if (!dateTimeStr) return "";
+    
+    // Parse the date considering timezone information
+    const date = new Date(dateTimeStr);
+    if (!isNaN(date.getTime())) {
+      const endDate = new Date(date.getTime() + durationMinutes * 60 * 1000);
+      return format(endDate, 'hh:mm a');
+    }
+    
+    return "";
+  } catch (e) {
+    console.error("Error calculating end time:", e, dateTimeStr);
+    return "";
+  }
+}

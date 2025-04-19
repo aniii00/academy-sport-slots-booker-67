@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
-import { format, parseISO } from "date-fns";
+import { formatDateString, formatTimeWithTimezone, calculateEndTime } from "@/lib/utils";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -99,90 +99,6 @@ export default function Profile() {
     }
   };
 
-  // Improved time and date formatting for consistency with the Booking page
-  const formatDate = (dateTimeStr: string) => {
-    try {
-      if (!dateTimeStr) return "Invalid date";
-      
-      // Parse the ISO date string
-      const date = parseISO(dateTimeStr);
-      if (!isNaN(date.getTime())) {
-        return format(date, 'EEE, dd MMM yyyy');
-      }
-      
-      // Fallback for other date formats
-      if (dateTimeStr.includes(' ')) {
-        const [datePart] = dateTimeStr.split(' ');
-        const parsedDate = new Date(`${datePart}T00:00:00`);
-        if (!isNaN(parsedDate.getTime())) {
-          return format(parsedDate, 'EEE, dd MMM yyyy');
-        }
-      }
-      
-      return "Invalid date";
-    } catch (e) {
-      console.error("Error formatting date:", e, dateTimeStr);
-      return "Date format error";
-    }
-  };
-
-  const formatTime = (dateTimeStr: string) => {
-    try {
-      if (!dateTimeStr) return "Invalid time";
-      
-      // Parse the ISO date string
-      const date = parseISO(dateTimeStr);
-      if (!isNaN(date.getTime())) {
-        return format(date, 'hh:mm a'); // 12-hour format with AM/PM
-      }
-      
-      // Handle postgres timestamp format (YYYY-MM-DD HH:MM:SS)
-      if (dateTimeStr.includes(' ') && dateTimeStr.includes(':')) {
-        const [, timePart] = dateTimeStr.split(' ');
-        if (timePart) {
-          const [hours, minutes] = timePart.split(':').map(Number);
-          const timeDate = new Date();
-          timeDate.setHours(hours, minutes, 0);
-          return format(timeDate, 'hh:mm a');
-        }
-      }
-      
-      return "Invalid time";
-    } catch (e) {
-      console.error("Error formatting time:", e, dateTimeStr);
-      return "Time format error";
-    }
-  };
-
-  // Calculate end time (30 minutes after start time)
-  const calculateEndTime = (dateTimeStr: string) => {
-    try {
-      // Parse the ISO date string
-      const date = parseISO(dateTimeStr);
-      if (!isNaN(date.getTime())) {
-        const endDate = new Date(date.getTime() + 30 * 60 * 1000);
-        return format(endDate, 'hh:mm a');
-      }
-      
-      // Handle postgres timestamp format
-      if (dateTimeStr.includes(' ') && dateTimeStr.includes(':')) {
-        const [datePart, timePart] = dateTimeStr.split(' ');
-        if (timePart) {
-          const [hours, minutes, seconds] = timePart.split(':').map(Number);
-          const timeDate = new Date();
-          timeDate.setHours(hours, minutes, 0);
-          const endTime = new Date(timeDate.getTime() + 30 * 60 * 1000);
-          return format(endTime, 'hh:mm a');
-        }
-      }
-      
-      return "";
-    } catch (e) {
-      console.error("Error calculating end time:", e, dateTimeStr);
-      return "";
-    }
-  };
-
   if (!user) {
     return (
       <div className="text-center py-12">
@@ -264,8 +180,9 @@ export default function Profile() {
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => {
-                  const formattedDate = formatDate(booking.slot_time);
-                  const startTime = formatTime(booking.slot_time);
+                  // Using the standardized utilities for consistent time display
+                  const formattedDate = formatDateString(booking.slot_time, 'EEE, dd MMM yyyy');
+                  const startTime = formatTimeWithTimezone(booking.slot_time);
                   const endTime = calculateEndTime(booking.slot_time);
                   
                   return (
