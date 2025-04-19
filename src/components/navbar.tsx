@@ -1,7 +1,8 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { HomeIcon, GridIcon, CalendarIcon, UserIcon, ShieldIcon, AlertTriangle } from "lucide-react";
+import { HomeIcon, GridIcon, CalendarIcon, UserIcon, ShieldIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 
@@ -10,7 +11,7 @@ export function Navbar() {
   const { toast } = useToast();
   const [isSigningOut, setIsSigningOut] = useState(false);
   
-  // Debug information for admin status
+  // Debug information for auth state
   useEffect(() => {
     console.log("Navbar - Auth state:", { 
       isLoggedIn: !!user,
@@ -70,12 +71,6 @@ export function Navbar() {
               </Button>
             ) : user ? (
               <>
-                {!profile && (
-                  <Button variant="ghost" className="text-amber-500 flex items-center gap-2" onClick={() => window.location.reload()}>
-                    <AlertTriangle className="h-4 w-4" />
-                    <span className="hidden sm:inline">Profile Error</span>
-                  </Button>
-                )}
                 <Link to="/profile">
                   <Button variant="ghost" className="flex items-center gap-2">
                     <UserIcon className="h-4 w-4" />

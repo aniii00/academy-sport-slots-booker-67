@@ -44,15 +44,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log("Fetching profile for user ID:", userId);
       
+      // Use maybeSingle() instead of single() to prevent errors when no profile is found
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, email, first_name, last_name, role, created_at, updated_at')
         .eq('id', userId)
         .maybeSingle();
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
         toast.error('Error loading user profile');
+        setProfile(null);
         return;
       }
 
@@ -62,10 +64,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         console.log('No profile found for user:', userId);
         toast.error('User profile not found');
+        setProfile(null);
       }
     } catch (error) {
       console.error('Error in profile fetch function:', error);
       toast.error('Error loading user profile');
+      setProfile(null);
+    } finally {
+      // Make sure we set isLoading to false even if there's an error
+      setIsLoading(false);
     }
   };
 
@@ -84,6 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }, 0);
         } else {
           setProfile(null);
+          setIsLoading(false);
         }
       }
     );
@@ -103,15 +111,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Update isLoading state when profile fetch completes
-  useEffect(() => {
-    if (!user || profile !== null) {
-      setIsLoading(false);
-    }
-  }, [user, profile]);
-
   const signOut = async () => {
     try {
+      setIsLoading(true);
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
@@ -120,6 +122,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error: any) {
       console.error("Error signing out:", error);
       toast.error("Error signing out");
+    } finally {
+      setIsLoading(false);
     }
   };
 
