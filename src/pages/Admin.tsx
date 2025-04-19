@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -12,11 +12,16 @@ import { toast } from "@/components/ui/sonner";
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("bookings");
-  const { user } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   
   if (!user) {
     toast.error("You must be logged in to access the admin panel");
     return <Navigate to="/auth" replace />;
+  }
+  
+  if (!isAdmin) {
+    toast.error("You do not have permission to access the admin panel");
+    return <Navigate to="/" replace />;
   }
   
   return (

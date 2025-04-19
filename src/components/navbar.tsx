@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { HomeIcon, GridIcon, CalendarIcon, UserIcon } from "lucide-react";
+import { HomeIcon, GridIcon, CalendarIcon, UserIcon, ShieldIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
@@ -46,7 +46,10 @@ export function Navbar() {
             <Link to="/" className="text-gray-600 hover:text-sports-blue">Home</Link>
             <Link to="/venue" className="text-gray-600 hover:text-sports-blue">Venues</Link>
             {isAdmin && (
-              <Link to="/admin" className="text-gray-600 hover:text-sports-blue">Admin</Link>
+              <Link to="/admin" className="text-gray-600 hover:text-sports-blue flex items-center gap-1">
+                <ShieldIcon className="h-4 w-4" />
+                Admin
+              </Link>
             )}
           </nav>
           

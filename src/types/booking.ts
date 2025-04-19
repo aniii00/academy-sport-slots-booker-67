@@ -12,13 +12,18 @@ export interface Booking {
   created_at: string;
   updated_at: string;
   amount: number;
-  // Nested relationships for venues and sports
+  // Nested relationships
   venues?: { 
     name: string;
+    location: string;
     [key: string]: any;
   };
   sports?: {
     name: string;
+    [key: string]: any;
+  };
+  profiles?: {
+    email: string;
     [key: string]: any;
   };
 }
