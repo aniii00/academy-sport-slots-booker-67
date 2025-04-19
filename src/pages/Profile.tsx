@@ -99,19 +99,18 @@ export default function Profile() {
     }
   };
 
-  // Helper function to format dates properly for timestamp without timezone
+  // Updated formatting functions for consistency with the slot-card.tsx and Booking.tsx
   const formatBookingDate = (dateTimeStr: string) => {
     try {
       if (!dateTimeStr) return "Invalid date";
       
       // If the date comes in Postgres timestamp format (YYYY-MM-DD HH:MM:SS)
       if (dateTimeStr.includes(' ') && dateTimeStr.includes(':')) {
-        // Split into date and time parts
+        // Parse the date part as a proper date
         const [datePart] = dateTimeStr.split(' ');
-        // Parse the date part only
         const date = new Date(`${datePart}T00:00:00`);
         if (!isNaN(date.getTime())) {
-          return format(date, 'EEEE, MMMM d, yyyy');
+          return format(date, 'EEE, dd MMM yyyy');
         }
       }
       
@@ -119,14 +118,14 @@ export default function Profile() {
       if (dateTimeStr.includes('T')) {
         const date = parseISO(dateTimeStr);
         if (!isNaN(date.getTime())) {
-          return format(date, 'EEEE, MMMM d, yyyy');
+          return format(date, 'EEE, dd MMM yyyy');
         }
       }
       
       // Last resort - try to parse the entire string
       const date = new Date(dateTimeStr);
       if (!isNaN(date.getTime())) {
-        return format(date, 'EEEE, MMMM d, yyyy');
+        return format(date, 'EEE, dd MMM yyyy');
       }
       
       return "Invalid date";
@@ -135,6 +134,7 @@ export default function Profile() {
       return "Date format error";
     }
   };
+
   const formatBookingTime = (dateTimeStr: string) => {
     try {
       if (!dateTimeStr) return "Invalid time";
@@ -144,26 +144,26 @@ export default function Profile() {
         // Split into date and time parts
         const [, timePart] = dateTimeStr.split(' ');
         if (timePart) {
-          // Handle time format (HH:MM:SS) to 12-hour format
-          const [hours, minutes] = timePart.split(':').map(Number);
-          const isPM = hours >= 12;
-          const displayHours = hours % 12 || 12;
-          return `${displayHours}:${String(minutes).padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`;
+          // Format time to 12-hour format with AM/PM
+          const date = new Date(`1970-01-01T${timePart}`);
+          if (!isNaN(date.getTime())) {
+            return format(date, 'hh:mm a');
+          }
         }
       }
       
-      // If it's in ISO 8601 format with T (e.g., from JavaScript Date)
+      // If it's in ISO 8601 format with T
       if (dateTimeStr.includes('T')) {
         const date = parseISO(dateTimeStr);
         if (!isNaN(date.getTime())) {
-          return format(date, 'h:mm a');
+          return format(date, 'hh:mm a'); // Use lowercase 'hh' for 12-hour format
         }
       }
       
       // Last resort - try to parse the entire string
       const date = new Date(dateTimeStr);
       if (!isNaN(date.getTime())) {
-        return format(date, 'h:mm a');
+        return format(date, 'hh:mm a');
       }
       
       return "Invalid time";
@@ -253,34 +253,55 @@ export default function Profile() {
               </div>
             ) : (
               <div className="space-y-4">
-                {bookings.map((booking) => (
-                  <Card key={booking.id} className="bg-gray-50">
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="font-semibold text-lg mb-1">
-                            {booking.sports?.name} at {booking.venues?.name}
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            {formatBookingDate(booking.slot_time)}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {formatBookingTime(booking.slot_time)}
-                          </p>
+                {bookings.map((booking) => {
+                  // Get start and end times for display
+                  const startTime = formatBookingTime(booking.slot_time);
+                  
+                  // Calculate end time (assuming 30 minute slots)
+                  let endTimeStr = "";
+                  try {
+                    if (booking.slot_time.includes(' ') && booking.slot_time.includes(':')) {
+                      const [datePart, timePart] = booking.slot_time.split(' ');
+                      const timeDate = new Date(`1970-01-01T${timePart}`);
+                      if (!isNaN(timeDate.getTime())) {
+                        const endTime = new Date(timeDate.getTime() + 30 * 60 * 1000);
+                        endTimeStr = format(endTime, 'hh:mm a');
+                      }
+                    }
+                  } catch (e) {
+                    console.error("Error calculating end time:", e);
+                    endTimeStr = "N/A";
+                  }
+                  
+                  return (
+                    <Card key={booking.id} className="bg-gray-50">
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="font-semibold text-lg mb-1">
+                              {booking.sports?.name} at {booking.venues?.name}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              {formatBookingDate(booking.slot_time)}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {startTime} - {endTimeStr}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge 
+                              variant={booking.status === 'confirmed' ? 'default' : 'secondary'}
+                              className="mb-2"
+                            >
+                              {booking.status}
+                            </Badge>
+                            <p className="font-medium">₹{booking.amount}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <Badge 
-                            variant={booking.status === 'confirmed' ? 'default' : 'secondary'}
-                            className="mb-2"
-                          >
-                            {booking.status}
-                          </Badge>
-                          <p className="font-medium">₹{booking.amount}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </CardContent>
