@@ -111,10 +111,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         // Handle the specific recursion error
         if (error.code === '42P17' && error.message.includes('infinite recursion')) {
-          console.log("Infinite recursion detected, manually setting admin status");
+          console.log("Infinite recursion detected, manually fetching role");
           
-          // Simplified fallback approach using direct REST API call
-          // Instead of accessing protected properties, use the Supabase URL from the client
+          // Use hardcoded Supabase URL and API key instead of accessing protected properties
           const supabaseUrl = "https://gvrayvnoriflhjyauqrg.supabase.co";
           const apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2cmF5dm5vcmlmbGhqeWF1cXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5MTg2MjQsImV4cCI6MjA2MDQ5NDYyNH0.ovMMDxFMz-qU326eSW-drj_4sm_foRp97CFIsXe-a94";
           
@@ -143,43 +142,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 updated_at: new Date().toISOString(),
               });
             } else {
-              // Fallback - check email for admin emails
-              const email = user?.email || "";
-              const isAdminEmail = email.includes("admin") || 
-                                  email === "meloreri@logsmarter.net";
-              
-              // Create a temporary profile
+              // Create a temporary profile with default user role
+              // Use the user ID instead of email for authorization
               setProfile({
                 id: userId,
                 email: user?.email || "",
                 first_name: user?.user_metadata?.first_name || null,
                 last_name: user?.user_metadata?.last_name || null,
-                role: isAdminEmail ? "admin" : "user",
+                role: "user", // Default to user role as fallback
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
               });
-              
-              // Remove the toast notification that was showing the fallback message
-              // toast(`Using fallback authentication for ${isAdminEmail ? "admin" : "user"} role`);
             }
           } else {
-            // If REST API fails, create a fallback profile based on user email
-            const email = user?.email || "";
-            const isAdminEmail = email.includes("admin") || 
-                                email === "meloreri@logsmarter.net";
-            
+            // If REST API fails, create a fallback profile with default user role
             setProfile({
               id: userId,
-              email: email,
+              email: user?.email || "",
               first_name: user?.user_metadata?.first_name || null,
               last_name: user?.user_metadata?.last_name || null,
-              role: isAdminEmail ? "admin" : "user",
+              role: "user", // Default to user role instead of email-based fallback
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             });
-            
-            // Remove the toast notification that was showing the fallback message
-            // toast(`Using email-based fallback for ${isAdminEmail ? "admin" : "user"} role`);
           }
         } else if (error.code !== '42501' && error.code !== '42P17') {
           // Only show an error toast for errors that aren't permissions related
@@ -195,13 +180,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         console.log("No profile found for user:", userId);
         // User exists but no profile - could happen if trigger failed
-        // Create a temporary profile
+        // Create a temporary profile with default role
         setProfile({
           id: userId,
           email: user?.email || "",
           first_name: user?.user_metadata?.first_name || null,
           last_name: user?.user_metadata?.last_name || null,
-          role: "user",
+          role: "user", // Default to user role
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
@@ -230,7 +215,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     session,
     profile,
-    isAdmin: profile?.role === "admin" || (user?.email === "meloreri@logsmarter.net"),
+    isAdmin: profile?.role === "admin", // Remove email-based fallback logic
     isLoading,
     signOut,
   };
