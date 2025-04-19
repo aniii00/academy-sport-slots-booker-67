@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,8 +37,6 @@ export default function Profile() {
     setIsLoading(true);
     setError(null);
     try {
-      console.log("Fetching bookings for user ID:", user?.id);
-      
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -51,7 +48,6 @@ export default function Profile() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error("Error fetching bookings:", error);
         setError(error.message);
         toast({
           title: "Error fetching bookings",
@@ -61,9 +57,6 @@ export default function Profile() {
         return;
       }
 
-      console.log("Bookings fetched:", data);
-      
-      // Transform the data to include amount (default to 0 if not present)
       const bookingsWithAmount = (data as any[])?.map(booking => ({
         ...booking,
         amount: booking.amount || 0
@@ -71,7 +64,6 @@ export default function Profile() {
       
       setBookings(bookingsWithAmount);
     } catch (error: any) {
-      console.error("Error fetching bookings:", error);
       setError(error.message);
       toast({
         title: "Error fetching bookings",
@@ -180,20 +172,9 @@ export default function Profile() {
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => {
-                  // Log the original slot_time to debug timezone issues
-                  console.log(`Original slot_time for booking ${booking.id}:`, booking.slot_time);
-                  
-                  // Format date and time with consistent timezone handling
                   const formattedDate = formatDateString(booking.slot_time, 'EEE, dd MMM yyyy');
                   const startTime = formatTimeWithTimezone(booking.slot_time);
                   const endTime = calculateEndTime(booking.slot_time, 30);
-                  
-                  // Log the formatted times to validate
-                  console.log(`Formatted times for booking ${booking.id}:`, {
-                    formattedDate,
-                    startTime,
-                    endTime,
-                  });
                   
                   return (
                     <Card key={booking.id} className="bg-gray-50">
@@ -232,3 +213,4 @@ export default function Profile() {
     </div>
   );
 }
+
