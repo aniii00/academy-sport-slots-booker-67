@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { format, parse, isValid } from "date-fns";
@@ -20,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Slot, Venue, Sport } from "@/types/venue";
 import type { Booking } from "@/types/booking";
 import { formatDateString } from "@/lib/utils";
+import { formatTimeIST } from "@/lib/timezone-utils";
 
 export default function Booking() {
   const [searchParams] = useSearchParams();
@@ -304,7 +304,7 @@ export default function Booking() {
                 <h4 className="font-medium">Date & Time</h4>
                 <div className="flex items-center">
                   <TimeIcon className="h-5 w-5 mr-2 text-gray-500" />
-                  <p>{formattedDate}, {slot.start_time} - {slot.end_time}</p>
+                  <p>{formattedDate}, {formatTimeIST(slot.start_time)} - {formatTimeIST(slot.end_time)}</p>
                 </div>
               </div>
               

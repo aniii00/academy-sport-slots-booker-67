@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
 import { formatDateString, formatTimeWithTimezone, calculateEndTime } from "@/lib/utils";
+import { formatDateTimeIST } from "@/lib/timezone-utils";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -175,18 +175,7 @@ export default function Profile() {
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => {
-                  console.log("Processing booking:", booking.id, "slot_time:", booking.slot_time);
-                  
-                  const formattedDate = formatDateString(booking.slot_time, 'EEE, dd MMM yyyy');
-                  const startTime = formatTimeWithTimezone(booking.slot_time);
-                  const endTime = calculateEndTime(booking.slot_time, 30);
-                  
-                  console.log("Formatted values:", { 
-                    formattedDate, 
-                    startTime, 
-                    endTime, 
-                    originalTime: booking.slot_time 
-                  });
+                  const formattedDateTime = formatDateTimeIST(booking.slot_time);
                   
                   return (
                     <Card key={booking.id} className="bg-gray-50">
@@ -197,10 +186,7 @@ export default function Profile() {
                               {booking.sports?.name} at {booking.venues?.name}
                             </h4>
                             <p className="text-sm text-gray-600">
-                              {formattedDate}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {startTime} - {endTime}
+                              {formattedDateTime}
                             </p>
                           </div>
                           <div className="text-right">

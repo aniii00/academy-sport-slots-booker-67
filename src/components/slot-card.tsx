@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { cn, formatDateString } from "@/lib/utils";
 import { toast } from "@/components/ui/sonner";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatTimeIST } from "@/lib/timezone-utils";
 
 interface SlotCardProps {
   slot: Slot;
@@ -155,7 +155,7 @@ export function SlotCard({ slot, className }: SlotCardProps) {
           <div className="flex items-center text-gray-500">
             <TimeIcon className="h-4 w-4 mr-1 text-sports-blue" />
             <span className="text-sm">
-              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+              {formatTimeIST(slot.start_time)} - {formatTimeIST(slot.end_time)}
             </span>
           </div>
         </div>
