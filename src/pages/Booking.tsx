@@ -25,7 +25,7 @@ export default function Booking() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const slotId = searchParams.get('slotId');
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   
   const [slot, setSlot] = useState<Slot | null>(null);
   const [venue, setVenue] = useState<Venue | null>(null);
@@ -39,7 +39,7 @@ export default function Booking() {
   useEffect(() => {
     if (!user) {
       toast.error("You must be logged in to book a slot");
-      navigate("/auth", { replace: true });
+      navigate("/auth", { state: { redirectTo: `/booking?slotId=${slotId}` } });
       return;
     }
 
@@ -109,9 +109,10 @@ export default function Booking() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
+    if (!user || !session) {
+      console.log("User not authenticated or session missing");
       toast.error("You must be logged in to book a slot");
-      navigate("/auth");
+      navigate("/auth", { state: { redirectTo: `/booking?slotId=${slotId}` } });
       return;
     }
 
@@ -133,6 +134,10 @@ export default function Booking() {
     setIsSubmitting(true);
     
     try {
+      console.log("Session token:", session.access_token ? "Present" : "Missing");
+      console.log("User authenticated:", !!user);
+      console.log("User ID:", user.id);
+      
       let slotDateTime;
       
       try {
@@ -161,17 +166,6 @@ export default function Booking() {
         return;
       }
       
-      // Check if user exists and is authenticated
-      if (!user.id) {
-        console.error("User ID is missing");
-        toast.error("Authentication error. Please log in again.");
-        setIsSubmitting(false);
-        navigate("/auth");
-        return;
-      }
-      
-      console.log("Creating booking with user ID:", user.id);
-      
       const booking = {
         user_id: user.id,
         venue_id: venue.id,
@@ -186,25 +180,36 @@ export default function Booking() {
       
       console.log("Creating booking with data:", booking);
       
-      // Log user info for debugging
-      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
-      if (userError) {
-        console.error("Error retrieving current user:", userError);
-      } else {
-        console.log("Current authenticated user:", currentUser);
+      // Make sure we have a fresh auth session before making the request
+      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("Error retrieving current session:", sessionError);
+        toast.error("Authentication error. Please log in again.");
+        navigate("/auth");
+        return;
       }
+      
+      if (!currentSession) {
+        console.error("No active session found");
+        toast.error("Your session has expired. Please log in again.");
+        navigate("/auth");
+        return;
+      }
+      
+      console.log("Using current session for booking");
       
       const { data, error } = await supabase
         .from('bookings')
         .insert(booking)
-        .select()
-        .single();
+        .select();
       
       if (error) {
         console.error("Booking error:", error);
         
         if (error.message.includes("violates row-level security policy")) {
-          toast.error("Authorization error: You don't have permission to create this booking. Please contact support.");
+          toast.error("Authorization error. Please try logging out and logging in again.");
+          setIsSubmitting(false);
+          setTimeout(() => navigate("/auth"), 2000);
         } else if (error.message.includes("date/time") || error.message.includes("out of range")) {
           toast.error("Failed to save booking: Invalid date/time format. Please try a different slot.");
         } else {
