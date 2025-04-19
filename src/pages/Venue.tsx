@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Venue, Sport } from "@/types/venue";
 import { toast } from "@/components/ui/sonner";
 import { motion } from "framer-motion";
+import { WavesIcon } from "@/utils/iconMapping";
 
 export default function Venue() {
   const [searchParams] = useSearchParams();
@@ -57,7 +58,13 @@ export default function Venue() {
   }, [initialSportId]);
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 relative overflow-hidden">
+      {/* Background Waves */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none">
+        <WavesIcon className="absolute top-0 left-0 w-full h-full text-blue-200 rotate-180" />
+        <WavesIcon className="absolute bottom-0 right-0 w-full h-full text-blue-200" />
+      </div>
+      
       <PageHeader 
         title={selectedSport ? `${selectedSport.name} Venues` : "All Venues"}
         subtitle={selectedSport 
@@ -65,15 +72,15 @@ export default function Venue() {
           : "Browse all our sports venues across locations"
         }
         showBackButton={!!selectedSport}
-        className="bg-white/50 backdrop-blur-sm"
+        className="relative z-10 bg-white/50 backdrop-blur-sm"
       />
       
       {isLoading ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 relative z-10">
           <h3 className="text-xl font-semibold mb-2">Loading venues...</h3>
         </div>
       ) : venues.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 relative z-10">
           <h3 className="text-xl font-semibold mb-2">No venues found</h3>
           <p className="text-gray-500">Try adjusting your filters to find more venues</p>
         </div>
@@ -82,7 +89,7 @@ export default function Venue() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 relative z-10"
         >
           {venues.map((venue, index) => (
             <motion.div
@@ -102,3 +109,4 @@ export default function Venue() {
     </div>
   );
 }
+

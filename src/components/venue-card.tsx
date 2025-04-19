@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const backgroundColors = [
+  'bg-gradient-to-br from-green-50 to-green-100',
   'bg-gradient-to-br from-blue-50 to-blue-100',
   'bg-gradient-to-br from-purple-50 to-purple-100',
-  'bg-gradient-to-br from-green-50 to-green-100',
   'bg-gradient-to-br from-yellow-50 to-yellow-100',
   'bg-gradient-to-br from-pink-50 to-pink-100',
 ];
@@ -32,7 +32,7 @@ export function VenueCard({ venue, selectedSportId, className }: VenueCardProps)
   const backgroundColorIndex = venue.id.charCodeAt(0) % backgroundColors.length;
   const backgroundColor = backgroundColors[backgroundColorIndex];
 
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchSports = async () => {
       try {
         const { data: venueSportsData, error: venueSportsError } = await supabase
@@ -69,11 +69,12 @@ export function VenueCard({ venue, selectedSportId, className }: VenueCardProps)
       whileHover={{ y: -5 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
+      className="shadow-lg rounded-2xl transition-all duration-300"
     >
       <Card className={cn(
-        "overflow-hidden transition-all duration-300",
+        "overflow-hidden transition-all duration-300 border-none rounded-2xl",
         backgroundColor,
-        "hover:shadow-xl rounded-2xl border-none",
+        "hover:shadow-xl",
         className
       )}>
         <div className="aspect-video overflow-hidden rounded-t-2xl">
@@ -115,13 +116,13 @@ export function VenueCard({ venue, selectedSportId, className }: VenueCardProps)
           >
             <Button 
               className={cn(
-                "w-full rounded-xl shadow-sm hover:shadow-md",
+                "w-full rounded-xl shadow-sm hover:shadow-md group",
                 "bg-white/70 backdrop-blur-sm text-sports-blue hover:bg-white/90",
-                "border border-sports-blue/20"
+                "border border-sports-blue/20 transition-all duration-300"
               )}
             >
               View Slots
-              <ArrowRightIcon className="ml-2 h-4 w-4" />
+              <ArrowRightIcon className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
           </Link>
         </CardContent>
@@ -129,3 +130,4 @@ export function VenueCard({ venue, selectedSportId, className }: VenueCardProps)
     </motion.div>
   );
 }
+
