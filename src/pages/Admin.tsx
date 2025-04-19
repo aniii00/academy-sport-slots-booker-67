@@ -21,7 +21,8 @@ export default function Admin() {
       user: !!user, 
       profile: profile,
       isAdmin: isAdmin,
-      profileRole: profile?.role
+      profileRole: profile?.role,
+      userEmail: user?.email
     });
   }, [user, profile, isAdmin]);
   
@@ -50,6 +51,9 @@ export default function Admin() {
           </p>
           <p className="text-gray-600 text-sm">
             Current role: {profile?.role || "Unknown"}
+          </p>
+          <p className="text-gray-600 text-sm">
+            Current email: {user?.email || "Unknown"}
           </p>
         </div>
       </div>

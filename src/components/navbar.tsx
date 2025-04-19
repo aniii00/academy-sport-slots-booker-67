@@ -4,12 +4,21 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { HomeIcon, GridIcon, CalendarIcon, UserIcon, ShieldIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function Navbar() {
   const { user, session, isAdmin, isLoading, signOut } = useAuth();
   const { toast } = useToast();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  
+  // Debug information for admin status
+  useEffect(() => {
+    console.log("Navbar - Auth state:", { 
+      isLoggedIn: !!user,
+      isAdmin,
+      profileRole: isAdmin ? 'admin' : 'user'
+    });
+  }, [user, isAdmin]);
   
   const handleSignOut = async () => {
     if (isSigningOut) return;
@@ -67,6 +76,14 @@ export function Navbar() {
                     Profile
                   </Button>
                 </Link>
+                {isAdmin && (
+                  <Link to="/admin">
+                    <Button variant="ghost" className="flex items-center gap-2">
+                      <ShieldIcon className="h-4 w-4" />
+                      Admin
+                    </Button>
+                  </Link>
+                )}
                 <Button
                   variant="ghost"
                   onClick={handleSignOut}

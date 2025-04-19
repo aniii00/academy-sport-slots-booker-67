@@ -2,12 +2,14 @@
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { Navbar } from "./navbar";
 import { Footer } from "./footer";
-import { HomeIcon, GridIcon, CalendarIcon, UserIcon } from "@/utils/iconMapping";
+import { HomeIcon, GridIcon, CalendarIcon, UserIcon, ShieldIcon } from "@/utils/iconMapping";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Layout() {
   const isMobile = useIsMobile();
   const location = useLocation();
+  const { isAdmin } = useAuth();
   
   // Check which tab is active based on the current path
   const isActive = (path: string) => {
@@ -52,15 +54,17 @@ export function Layout() {
               <span className="text-xs">Venues</span>
             </Link>
             
-            <Link 
-              to="/slots" 
-              className={`flex flex-col items-center justify-center flex-1 py-1 ${
-                isActive('/slots') ? 'text-sports-blue' : 'text-gray-500'
-              }`}
-            >
-              <CalendarIcon className="h-5 w-5" /> {/* Reduced from h-6 w-6 */}
-              <span className="text-xs">Slots</span>
-            </Link>
+            {isAdmin && (
+              <Link 
+                to="/admin" 
+                className={`flex flex-col items-center justify-center flex-1 py-1 ${
+                  isActive('/admin') ? 'text-sports-blue' : 'text-gray-500'
+                }`}
+              >
+                <ShieldIcon className="h-5 w-5" />
+                <span className="text-xs">Admin</span>
+              </Link>
+            )}
             
             <Link 
               to="/profile" 
@@ -77,4 +81,3 @@ export function Layout() {
     </div>
   );
 }
-
