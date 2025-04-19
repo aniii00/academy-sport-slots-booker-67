@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format, addDays, parse, addMinutes } from "date-fns";
+import { motion } from "framer-motion";
 import { PageHeader } from "@/components/ui/page-header";
-import { SlotCard } from "@/components/slot-card";
+import { AnimatedSlotCard } from "@/components/animated-slot-card";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "@/utils/iconMapping";
@@ -488,7 +489,12 @@ export default function Slots() {
   };
   
   return (
-    <div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen bg-gradient-to-b from-gray-50 to-white"
+    >
       <PageHeader 
         title="Available Slots" 
         subtitle={selectedVenue ? `at ${selectedVenue.name}` : "Select a venue and sport"}
@@ -496,8 +502,25 @@ export default function Slots() {
         backTo="/venue"
       />
       
-      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        <div>
+      <motion.div 
+        className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 relative"
+        initial={{ y: 20 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="relative">
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-sports-lightBlue to-transparent opacity-20 rounded-xl blur-lg"
+            animate={{
+              scale: [1, 1.02, 1],
+              opacity: [0.1, 0.2, 0.1],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              repeatType: "reverse",
+            }}
+          />
           <label className="block text-sm font-medium mb-1">Select Venue</label>
           <Select 
             value={selectedVenue?.id} 
@@ -506,7 +529,7 @@ export default function Slots() {
               setSelectedVenue(venue || null);
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-white/80 backdrop-blur">
               <SelectValue placeholder="Select a venue" />
             </SelectTrigger>
             <SelectContent>
@@ -519,7 +542,20 @@ export default function Slots() {
           </Select>
         </div>
         
-        <div>
+        <div className="relative">
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-sports-lightOrange to-transparent opacity-20 rounded-xl blur-lg"
+            animate={{
+              scale: [1, 1.02, 1],
+              opacity: [0.1, 0.2, 0.1],
+            }}
+            transition={{
+              duration: 3,
+              delay: 0.5,
+              repeat: Infinity,
+              repeatType: "reverse",
+            }}
+          />
           <label className="block text-sm font-medium mb-1">Select Sport</label>
           <Select 
             value={selectedSport?.id} 
@@ -529,7 +565,7 @@ export default function Slots() {
             }}
             disabled={!selectedVenue || availableSports.length === 0}
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-white/80 backdrop-blur">
               <SelectValue placeholder="Select a sport" />
             </SelectTrigger>
             <SelectContent>
@@ -542,13 +578,26 @@ export default function Slots() {
           </Select>
         </div>
         
-        <div>
+        <div className="relative">
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-sports-lightBlue to-transparent opacity-20 rounded-xl blur-lg"
+            animate={{
+              scale: [1, 1.02, 1],
+              opacity: [0.1, 0.2, 0.1],
+            }}
+            transition={{
+              duration: 3,
+              delay: 1,
+              repeat: Infinity,
+              repeatType: "reverse",
+            }}
+          />
           <label className="block text-sm font-medium mb-1">Select Date</label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-start text-left font-normal"
+                className="w-full justify-start text-left font-normal bg-white/80 backdrop-blur"
                 disabled={!selectedVenue || !selectedSport}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -562,38 +611,70 @@ export default function Slots() {
                 onSelect={(newDate) => setDate(newDate || new Date())}
                 initialFocus
                 disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0)) || date > addDays(new Date(), 30)}
+                className="rounded-lg border shadow-lg bg-white"
               />
             </PopoverContent>
           </Popover>
         </div>
-      </div>
+      </motion.div>
       
       {isLoading ? (
-        <div className="text-center py-12">
+        <motion.div 
+          className="text-center py-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
           <h3 className="text-xl font-semibold mb-2">Loading...</h3>
-        </div>
+        </motion.div>
       ) : selectedVenue && selectedSport ? (
         slots.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {slots.map((slot) => (
-              <SlotCard 
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 relative"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.div
+              className="absolute inset-0 -z-10 bg-gradient-to-tr from-sports-lightBlue via-transparent to-sports-lightOrange opacity-30 rounded-3xl blur-3xl"
+              animate={{
+                scale: [1, 1.05, 1],
+                opacity: [0.2, 0.3, 0.2],
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                repeatType: "reverse",
+              }}
+            />
+            {slots.map((slot, index) => (
+              <AnimatedSlotCard 
                 key={slot.id} 
-                slot={slot} 
+                slot={slot}
+                index={index}
               />
             ))}
-          </div>
+          </motion.div>
         ) : (
-          <div className="text-center py-12">
+          <motion.div 
+            className="text-center py-12"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
             <h3 className="text-xl font-semibold mb-2">No slots available</h3>
             <p className="text-gray-500">Try selecting a different date or sport</p>
-          </div>
+          </motion.div>
         )
       ) : (
-        <div className="text-center py-12">
+        <motion.div 
+          className="text-center py-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <h3 className="text-xl font-semibold mb-2">Select a venue and sport</h3>
           <p className="text-gray-500">Choose a venue and sport to view available slots</p>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }
