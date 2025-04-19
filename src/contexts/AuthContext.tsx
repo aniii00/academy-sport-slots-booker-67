@@ -3,8 +3,6 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
-import { useToast } from "@/hooks/use-toast";
 import { toast } from "@/components/ui/sonner";
 
 type Profile = {
@@ -40,177 +38,64 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [profileRequestAttempted, setProfileRequestAttempted] = useState(false);
   const navigate = useNavigate();
-  const { toast: hookToast } = useToast();
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        if (profileError.code === 'PGRST116') {
+          console.log('No profile found for user:', userId);
+          return;
+        }
+        throw profileError;
+      }
+
+      if (profileData) {
+        console.log('Profile fetched:', profileData);
+        setProfile(profileData);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast.error('Error loading user profile');
+    }
+  };
 
   useEffect(() => {
-    // Setup auth state listener first to catch any auth events during initial load
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        console.log("Auth state changed:", event, currentSession?.user?.id);
+        console.log('Auth state changed:', event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
-        
-        if (currentSession?.user) {
-          // Fetch profile in a separate function to avoid auth deadlocks
-          setTimeout(() => fetchProfile(currentSession.user.id), 0);
-        } else {
-          setProfile(null);
-          setIsLoading(false);
-        }
-      }
-    );
 
-    // Check for existing session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        
         if (currentSession?.user) {
           await fetchProfile(currentSession.user.id);
         } else {
-          setIsLoading(false);
+          setProfile(null);
         }
-      } catch (error) {
-        console.error("Error initializing auth:", error);
         setIsLoading(false);
       }
-    };
-    
-    initializeAuth();
+    );
+
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      
+      if (currentSession?.user) {
+        fetchProfile(currentSession.user.id);
+      }
+      setIsLoading(false);
+    });
 
     return () => {
       subscription.unsubscribe();
     };
   }, []);
-
-  const fetchProfile = async (userId: string) => {
-    if (profileRequestAttempted) {
-      console.log("Profile request already attempted, avoiding recursion");
-      setIsLoading(false);
-      return;
-    }
-
-    setProfileRequestAttempted(true);
-    
-    try {
-      console.log("Fetching profile for user:", userId);
-      
-      // Using a simpler query approach to avoid RLS recursion
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, first_name, last_name, role, created_at, updated_at')
-        .eq('id', userId)
-        .single();
-        
-      if (error) {
-        console.error("Error fetching profile:", error);
-        
-        // Handle the specific recursion error
-        if (error.code === '42P17' && error.message.includes('infinite recursion')) {
-          console.log("Infinite recursion detected, manually setting admin status");
-          
-          // Simplified fallback approach - use a direct REST call with fetch
-          // Instead of accessing protected properties of supabase client
-          const supabaseUrl = "https://gvrayvnoriflhjyauqrg.supabase.co";
-          const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2cmF5dm5vcmlmbGhqeWF1cXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5MTg2MjQsImV4cCI6MjA2MDQ5NDYyNH0.ovMMDxFMz-qU326eSW-drj_4sm_foRp97CFIsXe-a94";
-          
-          const authResponse = await fetch(
-            `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=role`,
-            {
-              headers: {
-                "apikey": supabaseKey,
-                "Authorization": `Bearer ${supabaseKey}`,
-                "Content-Type": "application/json"
-              }
-            }
-          );
-          
-          if (authResponse.ok) {
-            const userData = await authResponse.json();
-            if (userData && userData.length > 0) {
-              console.log("Retrieved profile from REST API:", userData[0]);
-              setProfile({
-                id: userId,
-                email: user?.email || "",
-                first_name: user?.user_metadata?.first_name || null,
-                last_name: user?.user_metadata?.last_name || null,
-                role: userData[0].role || "user",
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              });
-            } else {
-              // Fallback - check email for admin emails
-              const email = user?.email || "";
-              const isAdminEmail = email.includes("admin") || 
-                                  email === "meloreri@logsmarter.net";
-              
-              // Create a temporary profile
-              setProfile({
-                id: userId,
-                email: user?.email || "",
-                first_name: user?.user_metadata?.first_name || null,
-                last_name: user?.user_metadata?.last_name || null,
-                role: isAdminEmail ? "admin" : "user",
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              });
-              
-              // Show toast with manual fallback info
-              toast(`Using fallback authentication for ${isAdminEmail ? "admin" : "user"} role`);
-            }
-          } else {
-            // If REST API fails, create a fallback profile based on user email
-            const email = user?.email || "";
-            const isAdminEmail = email.includes("admin") || 
-                                email === "meloreri@logsmarter.net";
-            
-            setProfile({
-              id: userId,
-              email: email,
-              first_name: user?.user_metadata?.first_name || null,
-              last_name: user?.user_metadata?.last_name || null,
-              role: isAdminEmail ? "admin" : "user",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            });
-            
-            toast(`Using email-based fallback for ${isAdminEmail ? "admin" : "user"} role`);
-          }
-        } else if (error.code !== '42501' && error.code !== '42P17') {
-          // Only show an error toast for errors that aren't permissions related
-          hookToast({
-            title: "Error fetching profile",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      } else if (data) {
-        console.log("Profile fetched successfully:", data);
-        setProfile(data);
-      } else {
-        console.log("No profile found for user:", userId);
-        // User exists but no profile - could happen if trigger failed
-        // Create a temporary profile
-        setProfile({
-          id: userId,
-          email: user?.email || "",
-          first_name: user?.user_metadata?.first_name || null,
-          last_name: user?.user_metadata?.last_name || null,
-          role: "user",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-      }
-    } catch (error) {
-      console.error("Exception in profile fetch:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const signOut = async () => {
     try {
@@ -218,7 +103,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null);
       setSession(null);
       setProfile(null);
-      setProfileRequestAttempted(false);
       navigate("/auth");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -229,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     session,
     profile,
-    isAdmin: profile?.role === "admin" || (user?.email === "meloreri@logsmarter.net"),
+    isAdmin: profile?.role === "admin",
     isLoading,
     signOut,
   };

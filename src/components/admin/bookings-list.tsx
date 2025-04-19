@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Booking } from "@/types/booking";
 import { toast } from "@/components/ui/sonner";
 import { PencilIcon } from "lucide-react";
-import { Sport, Venue } from "@/types/venue";
 
 export function BookingsList() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -24,75 +22,36 @@ export function BookingsList() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [sports, setSports] = useState<Sport[]>([]);
   const [users, setUsers] = useState<{id: string, email: string}[]>([]);
-  
+
   useEffect(() => {
     const fetchBookings = async () => {
       try {
+        setIsLoading(true);
         console.log("Fetching bookings...");
-        // Direct fetch approach without relying on foreign key relationships
+        
         const { data: bookingsData, error: bookingsError } = await supabase
           .from('bookings')
-          .select('*');
-        
+          .select(`
+            *,
+            venues:venue_id (
+              name,
+              location
+            ),
+            sports:sport_id (
+              name
+            ),
+            profiles:user_id (
+              email
+            )
+          `);
+
         if (bookingsError) {
           console.error("Error fetching bookings:", bookingsError);
           throw bookingsError;
         }
-        
-        if (!bookingsData || bookingsData.length === 0) {
-          console.log("No bookings found in the database");
-          setBookings([]);
-          setIsLoading(false);
-          return;
-        }
-        
-        console.log("Raw bookings data:", bookingsData);
-        
-        // Get venue, sport and user details separately and combine them
-        const enhancedBookings = await Promise.all(
-          bookingsData.map(async (booking) => {
-            // Get venue details
-            const { data: venueData } = await supabase
-              .from('venues')
-              .select('name, location')
-              .eq('id', booking.venue_id)
-              .single();
-            
-            // Get sport details
-            const { data: sportData } = await supabase
-              .from('sports')
-              .select('name')
-              .eq('id', booking.sport_id)
-              .single();
-            
-            // Get user email - using direct fetch to avoid recursion issues
-            let userEmail = "Unknown";
-            try {
-              const { data: userData } = await supabase
-                .from('profiles')
-                .select('email')
-                .eq('id', booking.user_id)
-                .single();
-                
-              if (userData) {
-                userEmail = userData.email;
-              }
-            } catch (error) {
-              console.error("Error fetching user email:", error);
-            }
-            
-            return {
-              ...booking,
-              amount: booking.amount || 0,
-              venues: venueData || { name: 'Unknown Venue', location: 'Unknown Location' },
-              sports: sportData || { name: 'Unknown Sport' },
-              profiles: { email: userEmail }
-            };
-          })
-        );
-        
-        console.log("Enhanced bookings with details:", enhancedBookings);
-        setBookings(enhancedBookings);
+
+        console.log("Fetched bookings:", bookingsData);
+        setBookings(bookingsData || []);
       } catch (error) {
         console.error("Error processing bookings:", error);
         toast.error("Failed to load bookings data");
@@ -100,7 +59,7 @@ export function BookingsList() {
         setIsLoading(false);
       }
     };
-    
+
     const fetchVenuesAndSports = async () => {
       // Fetch venues
       const { data: venueData, error: venueError } = await supabase
@@ -167,26 +126,26 @@ export function BookingsList() {
         }
       }
     };
-    
+
     fetchBookings();
     fetchVenuesAndSports();
-    
-    // Set up real-time listener for bookings
+
+    // Set up real-time subscription for bookings
     const channel = supabase
       .channel('bookings-changes')
       .on('postgres_changes', 
           { event: '*', schema: 'public', table: 'bookings' },
           (payload) => {
             console.log("Booking changed:", payload);
-            fetchBookings(); // Re-fetch all bookings when a change occurs
+            fetchBookings();
           })
       .subscribe();
-    
+
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
-  
+
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = 
       (booking.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
@@ -199,12 +158,12 @@ export function BookingsList() {
     
     return matchesSearch && matchesStatus;
   });
-  
+
   const handleEditClick = (booking: Booking) => {
     setEditingBooking(booking);
     setIsEditDialogOpen(true);
   };
-  
+
   const handleEditSave = async () => {
     if (!editingBooking) return;
     
@@ -236,7 +195,7 @@ export function BookingsList() {
       toast.error("Failed to update booking");
     }
   };
-  
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -249,7 +208,7 @@ export function BookingsList() {
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-4">
       <div className="flex gap-4 mb-6">
