@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { format, parse, isValid } from "date-fns";
@@ -149,6 +150,7 @@ export default function Booking() {
           }
         }
         
+        // Combine date and time with T separator for ISO format
         slotDateTime = `${formattedDate}T${slot.start_time}`;
         
         console.log("Slot date/time for database:", slotDateTime);

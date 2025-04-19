@@ -7,77 +7,57 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Consistent date formatter with timezone consideration
+// Consistent date formatter with proper time zone handling
 export function formatDateString(dateTimeStr: string, formatPattern: string): string {
   try {
     if (!dateTimeStr) return "Invalid date";
     
-    // Create date object from the original string without manipulation
+    // Create date object from the original string to preserve timezone
     const date = new Date(dateTimeStr);
-    if (!isNaN(date.getTime())) {
-      return format(date, formatPattern);
+    if (isNaN(date.getTime())) {
+      console.error("Invalid date:", dateTimeStr);
+      return "Invalid date";
     }
     
-    // Try to parse as ISO date string if above approach failed
-    if (dateTimeStr.includes('T')) {
-      const isoDate = parseISO(dateTimeStr);
-      if (!isNaN(isoDate.getTime())) {
-        return format(isoDate, formatPattern);
-      }
-    }
-    
-    // Handle postgres timestamp format (YYYY-MM-DD HH:MM:SS)
-    if (dateTimeStr.includes(' ') && dateTimeStr.includes(':')) {
-      try {
-        const [datePart, timePart] = dateTimeStr.split(' ');
-        const fullDateStr = `${datePart}T${timePart}`;
-        const parsedDate = new Date(fullDateStr);
-        if (!isNaN(parsedDate.getTime())) {
-          return format(parsedDate, formatPattern);
-        }
-      } catch (error) {
-        console.error("Error parsing datetime:", error);
-      }
-    }
-    
-    return "Invalid date";
+    return format(date, formatPattern);
   } catch (e) {
     console.error("Error formatting date:", e, dateTimeStr);
     return "Date format error";
   }
 }
 
-// Format time consistently with timezone information preserved
+// Format time with consistent time zone handling
 export function formatTimeWithTimezone(dateTimeStr: string): string {
   try {
     if (!dateTimeStr) return "Invalid time";
     
-    // Use the original datetime string without manipulation to preserve timezone
     const date = new Date(dateTimeStr);
-    if (!isNaN(date.getTime())) {
-      return format(date, 'hh:mm a'); // 12-hour format with AM/PM
+    if (isNaN(date.getTime())) {
+      console.error("Invalid time:", dateTimeStr);
+      return "Invalid time";
     }
     
-    return "Invalid time";
+    // Apply consistent time format (12-hour with AM/PM)
+    return format(date, 'hh:mm a');
   } catch (e) {
     console.error("Error formatting time:", e, dateTimeStr);
     return "Time format error";
   }
 }
 
-// Calculate end time from a start time consistently
+// Calculate end time from start time with proper time zone handling
 export function calculateEndTime(dateTimeStr: string, durationMinutes: number = 30): string {
   try {
     if (!dateTimeStr) return "";
     
-    // Handle timezone correctly by using the original string
     const date = new Date(dateTimeStr);
-    if (!isNaN(date.getTime())) {
-      const endDate = new Date(date.getTime() + durationMinutes * 60 * 1000);
-      return format(endDate, 'hh:mm a');
+    if (isNaN(date.getTime())) {
+      console.error("Invalid date for end time calculation:", dateTimeStr);
+      return "";
     }
     
-    return "";
+    const endDate = addMinutes(date, durationMinutes);
+    return format(endDate, 'hh:mm a');
   } catch (e) {
     console.error("Error calculating end time:", e, dateTimeStr);
     return "";

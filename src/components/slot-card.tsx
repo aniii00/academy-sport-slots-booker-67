@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Slot, Venue, Sport } from "@/types/venue";
 import { TimeIcon, PriceIcon } from "@/utils/iconMapping";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, formatDateString } from "@/lib/utils";
 import { toast } from "@/components/ui/sonner";
 import { Badge } from "@/components/ui/badge";
 
@@ -22,12 +23,16 @@ export function SlotCard({ slot, className }: SlotCardProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   const formatTime = (timeStr: string) => {
-    const date = new Date(`1970-01-01T${timeStr}`);
-    return date.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    });
+    try {
+      const date = new Date(`1970-01-01T${timeStr}`);
+      if (isNaN(date.getTime())) {
+        return timeStr; // Return original if parsing fails
+      }
+      return format(date, 'hh:mm a'); // 12-hour format with AM/PM
+    } catch (error) {
+      console.error("Error formatting time:", error, timeStr);
+      return timeStr; // Return original on error
+    }
   };
   
 
@@ -107,7 +112,7 @@ export function SlotCard({ slot, className }: SlotCardProps) {
 
   let formattedDate;
   try {
-    formattedDate = format(new Date(slot.date), "EEE, dd MMM yyyy");
+    formattedDate = formatDateString(`${slot.date}T00:00:00`, "EEE, dd MMM yyyy");
   } catch (error) {
     console.error("Date formatting error:", error, slot.date);
     formattedDate = slot.date;

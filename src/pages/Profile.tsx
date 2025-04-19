@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +58,8 @@ export default function Profile() {
         return;
       }
 
+      console.log("Raw bookings from database:", data);
+      
       const bookingsWithAmount = (data as any[])?.map(booking => ({
         ...booking,
         amount: booking.amount || 0
@@ -172,9 +175,18 @@ export default function Profile() {
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => {
+                  console.log("Processing booking:", booking.id, "slot_time:", booking.slot_time);
+                  
                   const formattedDate = formatDateString(booking.slot_time, 'EEE, dd MMM yyyy');
                   const startTime = formatTimeWithTimezone(booking.slot_time);
                   const endTime = calculateEndTime(booking.slot_time, 30);
+                  
+                  console.log("Formatted values:", { 
+                    formattedDate, 
+                    startTime, 
+                    endTime, 
+                    originalTime: booking.slot_time 
+                  });
                   
                   return (
                     <Card key={booking.id} className="bg-gray-50">
@@ -213,4 +225,3 @@ export default function Profile() {
     </div>
   );
 }
-
