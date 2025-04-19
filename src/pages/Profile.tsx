@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
 import { formatDateTimeIST, formatTimeRangeIST } from "@/lib/timezone-utils";
+import { format, parseISO } from "date-fns";
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -174,13 +175,9 @@ export default function Profile() {
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => {
-                  console.log("Original booking time:", booking.slot_time);
-                  
-                  // Parse directly without timezone conversion
-                  const formattedDateTime = formatDateTimeIST(booking.slot_time);
+                  const parsedDate = parseISO(booking.slot_time);
+                  const formattedDate = format(parsedDate, 'EEE, dd MMM yyyy');
                   const formattedTimeRange = formatTimeRangeIST(booking.slot_time);
-                  console.log("Formatted booking time:", formattedDateTime);
-                  console.log("Formatted time range:", formattedTimeRange);
                   
                   return (
                     <Card key={booking.id} className="bg-gray-50">
@@ -191,7 +188,7 @@ export default function Profile() {
                               {booking.sports?.name} at {booking.venues?.name}
                             </h4>
                             <p className="text-sm text-gray-600">
-                              {formattedDateTime}
+                              {formattedDate}
                             </p>
                             <p className="text-sm text-gray-600">
                               {formattedTimeRange}
@@ -204,7 +201,7 @@ export default function Profile() {
                             >
                               {booking.status}
                             </Badge>
-                            <p className="font-medium">��{booking.amount}</p>
+                            <p className="font-medium">₹{booking.amount}</p>
                           </div>
                         </div>
                       </CardContent>
