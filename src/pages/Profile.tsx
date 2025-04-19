@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types/booking";
-import { formatDateTimeIST, formatTimeRangeIST } from "@/lib/timezone-utils";
+import { formatTimeRangeIST } from "@/lib/timezone-utils";
 import { format, parseISO } from "date-fns";
 
 export default function Profile() {
@@ -175,39 +176,50 @@ export default function Profile() {
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => {
-                  const parsedDate = parseISO(booking.slot_time);
-                  const formattedDate = format(parsedDate, 'EEE, dd MMM yyyy');
-                  const formattedTimeRange = formatTimeRangeIST(booking.slot_time);
+                  // Handle null or undefined slot_time
+                  if (!booking.slot_time) {
+                    console.error("Booking is missing slot_time:", booking.id);
+                    return null; // Skip this booking
+                  }
                   
-                  return (
-                    <Card key={booking.id} className="bg-gray-50">
-                      <CardContent className="p-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="font-semibold text-lg mb-1">
-                              {booking.sports?.name} at {booking.venues?.name}
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                              {formattedDate}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {formattedTimeRange}
-                            </p>
+                  try {
+                    const parsedDate = parseISO(booking.slot_time);
+                    const formattedDate = format(parsedDate, 'EEE, dd MMM yyyy');
+                    const formattedTimeRange = formatTimeRangeIST(booking.slot_time);
+                    
+                    return (
+                      <Card key={booking.id} className="bg-gray-50">
+                        <CardContent className="p-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <h4 className="font-semibold text-lg mb-1">
+                                {booking.sports?.name} at {booking.venues?.name}
+                              </h4>
+                              <p className="text-sm text-gray-600">
+                                {formattedDate}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {formattedTimeRange}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <Badge 
+                                variant={booking.status === 'confirmed' ? 'default' : 'secondary'}
+                                className="mb-2"
+                              >
+                                {booking.status}
+                              </Badge>
+                              <p className="font-medium">₹{booking.amount}</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <Badge 
-                              variant={booking.status === 'confirmed' ? 'default' : 'secondary'}
-                              className="mb-2"
-                            >
-                              {booking.status}
-                            </Badge>
-                            <p className="font-medium">₹{booking.amount}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        </CardContent>
+                      </Card>
+                    );
+                  } catch (e) {
+                    console.error("Error formatting booking date:", e, booking);
+                    return null; // Skip this booking on error
+                  }
+                }).filter(Boolean)} {/* Filter out any null elements */}
               </div>
             )}
           </CardContent>
