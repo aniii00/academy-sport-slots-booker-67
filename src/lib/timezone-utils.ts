@@ -47,15 +47,23 @@ export function formatTimeIST(timeStr: string) {
 
 /**
  * Format a datetime string to IST display format
- * Uses the timezone information in the input string
+ * This function will correctly display the time as it was stored
+ * without applying additional timezone conversions
  */
 export function formatDateTimeIST(dateTimeStr: string) {
   try {
-    // First convert to IST timezone
-    const istDate = convertToIST(dateTimeStr);
+    // Parse the ISO string directly without timezone adjustment
+    const date = parseISO(dateTimeStr);
     
-    // Format the date in IST
-    return format(istDate, 'EEE, dd MMM yyyy hh:mm a');
+    // Log original string and parsed date
+    console.log("formatDateTimeIST - Original:", dateTimeStr);
+    console.log("formatDateTimeIST - Parsed date:", date);
+    
+    // Display the time as stored in the database
+    const formatted = format(date, 'EEE, dd MMM yyyy hh:mm a');
+    console.log("formatDateTimeIST - Formatted:", formatted);
+    
+    return formatted;
   } catch (error) {
     console.error('Error formatting IST datetime:', error);
     return dateTimeStr;
@@ -70,6 +78,7 @@ export function createISTDateTimeForDB(dateStr: string, timeStr: string): string
   try {
     // Combine date and time
     const dateTimeStr = `${dateStr}T${timeStr}`;
+    console.log("createISTDateTimeForDB - Combined:", dateTimeStr);
     // This is explicitly treated as IST
     return dateTimeStr;
   } catch (error) {

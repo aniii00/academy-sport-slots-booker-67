@@ -176,8 +176,8 @@ export default function Profile() {
               <div className="space-y-4">
                 {bookings.map((booking) => {
                   console.log("Original booking time:", booking.slot_time);
-                  const parsedDate = convertToIST(booking.slot_time);
-                  console.log("Parsed date in IST:", parsedDate);
+                  
+                  // Parse directly without timezone conversion
                   const formattedDateTime = formatDateTimeIST(booking.slot_time);
                   console.log("Formatted booking time:", formattedDateTime);
                   
