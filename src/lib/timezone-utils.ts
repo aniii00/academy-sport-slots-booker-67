@@ -1,13 +1,13 @@
 
 import { format, parseISO } from 'date-fns';
-import { utcToZonedTime } from 'date-fns-tz';
+import { toZonedTime } from 'date-fns-tz';
 
 const IST_TIMEZONE = 'Asia/Kolkata';
 
 export function convertToIST(dateTimeStr: string) {
   try {
     const date = parseISO(dateTimeStr);
-    const istDate = utcToZonedTime(date, IST_TIMEZONE);
+    const istDate = toZonedTime(date, IST_TIMEZONE);
     return istDate;
   } catch (error) {
     console.error('Error converting to IST:', error);
@@ -21,7 +21,7 @@ export function formatTimeIST(timeStr: string) {
     const today = new Date().toISOString().split('T')[0];
     const dateTimeStr = `${today}T${timeStr}`;
     const date = parseISO(dateTimeStr);
-    const istDate = utcToZonedTime(date, IST_TIMEZONE);
+    const istDate = toZonedTime(date, IST_TIMEZONE);
     return format(istDate, 'hh:mm a');
   } catch (error) {
     console.error('Error formatting IST time:', error);
