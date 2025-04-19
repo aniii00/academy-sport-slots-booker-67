@@ -26,7 +26,8 @@ import {
   ArrowLeft,
   BarChart, 
   IndianRupee,
-  Waves
+  Waves,
+  Shield
 } from "lucide-react";
 
 // Map sport names to icons
@@ -68,3 +69,4 @@ export const CloseIcon = (props: any) => <X {...props} />;
 export const BackIcon = (props: any) => <ArrowLeft {...props} />;
 export const ChartIcon = (props: any) => <BarChart {...props} />;
 export const WavesIcon = (props: any) => <Waves {...props} />;
+export const ShieldIcon = (props: any) => <Shield {...props} />;
